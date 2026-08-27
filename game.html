@@ -195,7 +195,7 @@
 
   const SHEET_COLS = 10, SHEET_ROWS = 8;
   const FRAME_COUNT = 76;
-  const CELL_W = 256, CELL_H = 455;
+  const CELL_W = 142, CELL_H = 254;
 
   const CHAR_W = 200, CHAR_H = Math.round(CHAR_W * CELL_H / CELL_W);
   const GROUND_Y = LOGIC_H - 110;
@@ -759,19 +759,12 @@
   }
 
   // ===== 排行榜系统（GitHub Issues 当后端） =====
-  const GH = {
-    owner: "guanqicong",
-    repo:  "guanqicong.github.io",
-    token: (['github_pat_11CMWBH2A0kDm','judpMod1m_RPF3Zhm4PXL7nS','4N6TwWUXPSusqaiWAXwl8mLx','yMi9ZZLDYI4YAfVI4oA8h'].join(''))
-  };
   const LABEL = "leaderboard";
   const LB_TITLE_PREFIX = "[LB] ";
 
   function lbHeaders(){
     return {
-      "Authorization": "Bearer " + GH.token,
-      "Accept": "application/vnd.github+json",
-      "Content-Type": "application/json"
+      "Accept": "application/vnd.github+json"
     };
   }
 
@@ -794,51 +787,32 @@
       + '</div>';
     stage.appendChild(layer);
     document.getElementById("lbScoreShow").textContent = game.score;
-
-    var input = document.getElementById("lbNameInput");
-    setTimeout(function(){ try{ input.focus(); }catch(e){} }, 200);
-
-    document.getElementById("lbSubmitBtn").addEventListener("click", function(){
-      submitScore();
-    });
     document.getElementById("lbRankBtn").addEventListener("click", function(){
+      var l = document.getElementById("lbInputLayer");
+      if(l) l.remove();
       showLeaderboard();
+    });
+    document.getElementById("lbReplayBtn").addEventListener("click", function(){
+      var l = document.getElementById("lbInputLayer");
+      if(l) l.remove();
+      show("select");
     });
   }
 
-  function submitScore(){
-    var nameEl = document.getElementById("lbNameInput");
-    var errEl = document.getElementById("lbInputErr");
-    var btn = document.getElementById("lbSubmitBtn");
-    var name = (nameEl.value || "").trim();
-    if(!name){
-      errEl.textContent = "请先输入名字";
-      return;
-    }
     btn.disabled = true;
     btn.textContent = "上传中...";
     errEl.textContent = "";
 
     var title = LB_TITLE_PREFIX + name + " " + game.score + "分";
     var body = "得分：**" + game.score + "**\n玩家：" + name + "\n时间：" + new Date().toLocaleString("zh-CN");
-    var url = "https://api.github.com/repos/" + GH.owner + "/" + GH.repo + "/issues";
-    fetch(url, {
-      method: "POST",
-      headers: lbHeaders(),
-      body: JSON.stringify({ title: title, body: body, labels: [LABEL] })
-    }).then(function(r){
-      if(!r.ok) throw new Error("HTTP " + r.status);
-      return r.json();
-    }).then(function(){
-      showLeaderboard(true);
-    }).catch(function(e){
-      btn.disabled = false;
-      btn.textContent = "🏆 上榜";
-      errEl.textContent = "上传失败：" + e.message + "，再试一次";
-    });
+    // 排行榜纯读取，无需写入——请联系新郎新娘代为上榜
+    var l = document.getElementById("lbInputLayer");
+    if(l) l.remove();
+    showLeaderboard();
   }
 
-  // 显示排行榜
+  // 显示排行榜（纯读取，无需认证）
+
   function showLeaderboard(autoFromSubmit){
     var layer = document.getElementById("lbInputLayer");
     if(layer) layer.remove();
@@ -855,7 +829,7 @@
       + '</div>';
     stage.appendChild(layer);
 
-    var url = "https://api.github.com/repos/" + GH.owner + "/" + GH.repo + "/issues?labels=" + LABEL + "&state=all&per_page=100";
+    var url = "https://api.github.com/repos/guanqicong/guanqicong.github.io/issues?labels=" + LABEL + "&state=all&per_page=100";
     fetch(url, { headers: lbHeaders() })
       .then(function(r){ if(!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
       .then(function(issues){
