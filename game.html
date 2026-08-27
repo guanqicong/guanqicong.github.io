@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -769,33 +769,7 @@
   }
 
   // 显示"输入名字上分"弹层
-  function showNameInput(){
-    playBgm();
-    var layer = document.createElement("div");
-    layer.id = "lbInputLayer";
-    layer.style.cssText = "position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:100;display:flex;align-items:center;justify-content:center;flex-direction:column;";
-    layer.innerHTML = ''
-      + '<div style="background:linear-gradient(135deg,#c8001e,#8b0000);border:3px solid #FFD700;border-radius:20px;padding:7vw 5vw;width:84%;text-align:center;color:#fff;">'
-      +   '<div style="font-size:7vw;color:#FFD700;margin-bottom:3vw;">&#x1F389; &#x6E38;&#x620F;&#x7ED3;&#x675F;&#xFF01;</div>'
-      +   '<div style="font-size:5vw;margin-bottom:1vw;color:rgba(255,255,255,.8);">&#x4F60;&#x7684;&#x5F97;&#x5206;</div>'
-      +   '<div id="lbScoreShow" style="font-size:22vw;color:#FFD700;font-weight:bold;line-height:1;margin:1vw 0 4vw;text-shadow:0 0 25px #FFB347;">0</div>'
-      +   '<div style="font-size:4.8vw;color:#FFE680;line-height:1.6;margin-bottom:4vw;">&#x8BF7;&#x8054;&#x7CFB;&#x65B0;&#x90CE;&#x65B0;&#x5A18;&#x5A18;<br>&#x544A;&#x8BC9;&#x4ED6;&#x4EEC;&#x4F60;&#x7684;&#x5F97;&#x5206;&#xFF0C;&#x5E2E;&#x4F60;&#x4E0A;&#x699C;&#xFF01;</div>'
-      +   '<button id="lbRankBtn" style="display:block;width:90%;margin:0 auto 2vw;padding:3.5vw;font-size:5.5vw;background:#FFD700;color:#8b0000;border:none;border-radius:10px;font-weight:bold;">&#x1F3C6; &#x67E5;&#x770B;&#x6392;&#x884C;&#x699C;</button>'
-      +   '<button id="lbReplayBtn" style="display:block;width:90%;margin:0 auto;padding:3vw;font-size:5vw;background:transparent;color:#FFD700;border:2px solid #FFD700;border-radius:10px;">&#x1F501; &#x518D;&#x73A9;&#x4E00;&#x6B21;</button>'
-      + '</div>';
-    stage.appendChild(layer);
-    document.getElementById("lbScoreShow").textContent = game.score;
-    document.getElementById("lbRankBtn").addEventListener("click", function(){
-      var l = document.getElementById("lbInputLayer");
-      if(l) l.remove();
-      showLeaderboard();
-    });
-    document.getElementById("lbReplayBtn").addEventListener("click", function(){
-      var l = document.getElementById("lbInputLayer");
-      if(l) l.remove();
-      show("select");
-    });
-  }
+  function showNameInput(){    playBgm();    var layer = document.createElement("div");    layer.id = "lbInputLayer";    layer.style.cssText = "position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:100;display:flex;align-items:center;justify-content:center;flex-direction:column;";    layer.innerHTML = ''      + '<div style="background:linear-gradient(135deg,#c8001e,#8b0000);border:3px solid #FFD700;border-radius:20px;padding:7vw 5vw;width:84%;text-align:center;color:#fff;">'      +   '<div style="font-size:7vw;color:#FFD700;margin-bottom:3vw;">&#x1F389; &#x6E38;&#x620F;&#x7ED3;&#x675F;&#xFF01;</div>'      +   '<div style="font-size:5vw;margin-bottom:1vw;color:rgba(255,255,255,.8);">&#x4F60;&#x7684;&#x5F97;&#x5206;</div>'      +   '<div id="lbScoreShow" style="font-size:22vw;color:#FFD700;font-weight:bold;line-height:1;margin:1vw 0 4vw;text-shadow:0 0 25px #FFB347;">0</div>'      +   '<div style="font-size:4.8vw;color:#FFE680;line-height:1.6;margin-bottom:4vw;">&#x8BF7;&#x8054;&#x7CFB;&#x65B0;&#x90CE;&#x65B0;&#x5A18;&#x5A18;<br>&#x544A;&#x8BC9;&#x4ED6;&#x4EEC;&#x4F60;&#x7684;&#x5F97;&#x5206;&#xFF0C;&#x5E2E;&#x4F60;&#x4E0A;&#x699C;&#xFF01;</div>'      +   '<button id="lbRankBtn" style="display:block;width:90%;margin:0 auto 2vw;padding:3.5vw;font-size:5.5vw;background:#FFD700;color:#8b0000;border:none;border-radius:10px;font-weight:bold;">&#x1F3C6; &#x67E5;&#x770B;&#x6392;&#x884C;&#x699C;</button>'      +   '<button id="lbReplayBtn" style="display:block;width:90%;margin:0 auto;padding:3vw;font-size:5vw;background:transparent;color:#FFD700;border:2px solid #FFD700;border-radius:10px;">&#x1F501; &#x518D;&#x73A9;&#x4E00;&#x6B21;</button>'      + '</div>';    stage.appendChild(layer);    document.getElementById("lbScoreShow").textContent = game.score;    document.getElementById("lbRankBtn").addEventListener("click", function(){      var l = document.getElementById("lbInputLayer");      if(l) l.remove();      showLeaderboard();    });    document.getElementById("lbReplayBtn").addEventListener("click", function(){      var l = document.getElementById("lbInputLayer");      if(l) l.remove();      show("select");    });  }
 
   // 显示排行榜（纯读取，无需认证）
 
