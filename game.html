@@ -201,7 +201,7 @@
   let char = null;
   const game = {
     canvas:null, ctx:null, scale:1,
-    running:false, lastT:0,
+    running:false, lastT:0, score:0, target:5,
     hearts:[], spawnTimer:0,
     charX:LOGIC_W/2, charDir:1, moving:false, bob:0, frameIdx:0, frameTimer:0
   };
@@ -465,6 +465,8 @@
     resizeCanvas();
     game.running = true;
     game.hearts = [];
+    game.score = 0;
+    game.target = 5;
     game.spawnTimer = 0.3;
     game.charX = LOGIC_W / 2;
     game.charDir = 1;
@@ -543,10 +545,14 @@
       if(!h.caught && h.y > catchTop && h.y < catchBottom && h.x > catchLeft && h.x < catchRight){
         h.caught = true;
         if(h.red){
-          game.running = false;
+          game.score++;
+          game.hearts.splice(i, 1);
           playCatchSound();
-          // 同步切换地图页：保持"触摸手势事件流"内切换，iOS/安卓微信才会放行视频自动播放（setTimeout 会失去手势上下文被拦）
-          show("map");
+          // 满 N 颗红心 → 显示"输入名字"上分页
+          if(game.score >= game.target){
+            game.running = false;
+            showNameInput();
+          }
           return;
         }
         // 黄心碰到角色：也播放爱心音效（用户要求：红黄爱心共用爱心音效）
@@ -579,6 +585,9 @@
 
     // 背景
     if(RES.bg) ctx.drawImage(RES.bg, 0, 0, LOGIC_W, LOGIC_H);
+
+    // 顶部积分 HUD
+    drawScoreHud(ctx);
 
     // 爱心
     for(const h of game.hearts){
@@ -613,6 +622,195 @@
       }
       ctx.restore();
     }
+  }
+
+  function drawScoreHud(ctx){
+    const w = 240, h = 78, x = LOGIC_W/2 - w/2, y = 60;
+    ctx.save();
+    ctx.fillStyle = "rgba(192,8,30,0.85)";
+    roundRect(ctx, x, y, w, h, 18);
+    ctx.fill();
+    ctx.fillStyle = "#FFE680";
+    ctx.font = "bold 36px sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("♥ " + game.score + " / " + game.target, LOGIC_W/2, y + h/2);
+    ctx.restore();
+  }
+
+  function roundRect(ctx, x, y, w, h, r){
+    ctx.beginPath();
+    ctx.moveTo(x+r, y);
+    ctx.lineTo(x+w-r, y);
+    ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+    ctx.lineTo(x+w, y+h-r);
+    ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+    ctx.lineTo(x+r, y+h);
+    ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+    ctx.lineTo(x, y+r);
+    ctx.quadraticCurveTo(x, y, x+r, y);
+    ctx.closePath();
+  }
+
+  // ===== 排行榜系统（GitHub Issues 当后端） =====
+  const GH = {
+    owner: "guanqicong",
+    repo:  "guanqicong.github.io",
+    token: "PLACEHOLDER_GITHUB_PAT_HERE"
+  };
+  const LABEL = "leaderboard";
+  const LB_TITLE_PREFIX = "[LB] ";
+
+  function lbHeaders(){
+    return {
+      "Authorization": "Bearer " + GH.token,
+      "Accept": "application/vnd.github+json",
+      "Content-Type": "application/json"
+    };
+  }
+
+  // 显示"输入名字上分"弹层
+  function showNameInput(){
+    playBgm();
+    var layer = document.createElement("div");
+    layer.id = "lbInputLayer";
+    layer.style.cssText = "position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.78);z-index:100;display:flex;align-items:center;justify-content:center;flex-direction:column;";
+    layer.innerHTML = ''
+      + '<div style="background:linear-gradient(135deg,#c8001e,#8b0000);border:3px solid #FFD700;border-radius:20px;padding:6vw 4vw;width:82%;text-align:center;color:#fff;">'
+      +   '<div style="font-size:8vw;color:#FFD700;margin-bottom:2vw;">🎉 恭喜通关！</div>'
+      +   '<div style="font-size:5.5vw;margin-bottom:1vw;">你的得分</div>'
+      +   '<div id="lbScoreShow" style="font-size:18vw;color:#FFD700;font-weight:bold;line-height:1.1;margin:1vw 0 4vw;text-shadow:0 0 20px #FFB347;">0</div>'
+      +   '<div style="font-size:4.5vw;margin-bottom:2vw;">输入你的名字上榜</div>'
+      +   '<input id="lbNameInput" maxlength="10" placeholder="比如：张三" style="display:block;width:90%;margin:0 auto 4vw;padding:3vw 4vw;font-size:5.5vw;border:2px solid #FFD700;border-radius:10px;background:#fff;color:#333;text-align:center;">'
+      +   '<div id="lbInputErr" style="font-size:4vw;color:#FFB347;min-height:5vw;margin-bottom:2vw;"></div>'
+      +   '<button id="lbSubmitBtn" style="display:block;width:90%;margin:0 auto 2vw;padding:3vw;font-size:5.5vw;background:#FFD700;color:#8b0000;border:none;border-radius:10px;font-weight:bold;">🏆 上榜</button>'
+      +   '<button id="lbRankBtn" style="display:block;width:90%;margin:0 auto;padding:3vw;font-size:5vw;background:transparent;color:#FFD700;border:2px solid #FFD700;border-radius:10px;">查看排行榜</button>'
+      + '</div>';
+    stage.appendChild(layer);
+    document.getElementById("lbScoreShow").textContent = game.score;
+
+    var input = document.getElementById("lbNameInput");
+    setTimeout(function(){ try{ input.focus(); }catch(e){} }, 200);
+
+    document.getElementById("lbSubmitBtn").addEventListener("click", function(){
+      submitScore();
+    });
+    document.getElementById("lbRankBtn").addEventListener("click", function(){
+      showLeaderboard();
+    });
+  }
+
+  function submitScore(){
+    var nameEl = document.getElementById("lbNameInput");
+    var errEl = document.getElementById("lbInputErr");
+    var btn = document.getElementById("lbSubmitBtn");
+    var name = (nameEl.value || "").trim();
+    if(!name){
+      errEl.textContent = "请先输入名字";
+      return;
+    }
+    btn.disabled = true;
+    btn.textContent = "上传中...";
+    errEl.textContent = "";
+
+    var title = LB_TITLE_PREFIX + name + " " + game.score + "分";
+    var body = "得分：**" + game.score + "**\n玩家：" + name + "\n时间：" + new Date().toLocaleString("zh-CN");
+    var url = "https://api.github.com/repos/" + GH.owner + "/" + GH.repo + "/issues";
+    fetch(url, {
+      method: "POST",
+      headers: lbHeaders(),
+      body: JSON.stringify({ title: title, body: body, labels: [LABEL] })
+    }).then(function(r){
+      if(!r.ok) throw new Error("HTTP " + r.status);
+      return r.json();
+    }).then(function(){
+      showLeaderboard(true);
+    }).catch(function(e){
+      btn.disabled = false;
+      btn.textContent = "🏆 上榜";
+      errEl.textContent = "上传失败：" + e.message + "，再试一次";
+    });
+  }
+
+  // 显示排行榜
+  function showLeaderboard(autoFromSubmit){
+    var layer = document.getElementById("lbInputLayer");
+    if(layer) layer.remove();
+
+    layer = document.createElement("div");
+    layer.id = "lbListLayer";
+    layer.style.cssText = "position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.92);z-index:100;display:flex;align-items:center;justify-content:center;flex-direction:column;overflow:auto;";
+    layer.innerHTML = ''
+      + '<div style="background:linear-gradient(135deg,#c8001e,#8b0000);border:3px solid #FFD700;border-radius:20px;padding:4vw;width:92%;max-height:90%;text-align:center;color:#fff;overflow:auto;">'
+      +   '<div style="font-size:7vw;color:#FFD700;margin-bottom:3vw;">🏆 婚礼爱心排行榜 🏆</div>'
+      +   '<div id="lbListBody" style="font-size:4.5vw;line-height:1.6;color:#FFE680;min-height:20vw;padding:2vw 0;">加载中...</div>'
+      +   '<button id="lbReplayBtn" style="display:block;width:80%;margin:4vw auto 2vw;padding:3vw;font-size:5vw;background:#FFD700;color:#8b0000;border:none;border-radius:10px;font-weight:bold;">再玩一次</button>'
+      +   '<button id="lbBackGameBtn" style="display:block;width:80%;margin:0 auto 2vw;padding:3vw;font-size:4.5vw;background:transparent;color:#FFD700;border:2px solid #FFD700;border-radius:10px;">返回地图</button>'
+      + '</div>';
+    stage.appendChild(layer);
+
+    var url = "https://api.github.com/repos/" + GH.owner + "/" + GH.repo + "/issues?labels=" + LABEL + "&state=all&per_page=100";
+    fetch(url, { headers: lbHeaders() })
+      .then(function(r){ if(!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+      .then(function(issues){
+        var rows = [];
+        issues.forEach(function(it){
+          if(!it.title || it.title.indexOf(LB_TITLE_PREFIX) !== 0) return;
+          var rest = it.title.substring(LB_TITLE_PREFIX.length);
+          var m = rest.match(/^(.+?)\s+(\d+)分$/);
+          if(!m) return;
+          var nm = m[1].trim();
+          var sc = parseInt(m[2], 10);
+          rows.push({ name: nm, score: sc, time: it.created_at });
+        });
+        rows.sort(function(a,b){
+          if(b.score !== a.score) return b.score - a.score;
+          return a.time < b.time ? -1 : 1;
+        });
+        var seen = {};
+        var dedup = [];
+        rows.forEach(function(r){
+          if(seen[r.name]) return;
+          seen[r.name] = true;
+          dedup.push(r);
+        });
+        var top = dedup.slice(0, 20);
+        var body = document.getElementById("lbListBody");
+        if(top.length === 0){
+          body.innerHTML = "暂无记录，做第一个上榜的玩家！";
+        } else {
+          var html = '<div style="text-align:left;">';
+          top.forEach(function(r, idx){
+            var rank = idx + 1;
+            var medal = rank === 1 ? "🥇" : (rank === 2 ? "🥈" : (rank === 3 ? "🥉" : rank + "."));
+            html += '<div style="display:flex;justify-content:space-between;padding:2vw 3vw;border-bottom:1px solid rgba(255,214,128,0.3);' + (idx<3 ? "color:#FFD700;font-weight:bold;" : "") + '">'
+                  +   '<span>' + medal + ' ' + escapeHtml(r.name) + '</span>'
+                  +   '<span>' + r.score + ' 分</span>'
+                  + '</div>';
+          });
+          html += '</div>';
+          body.innerHTML = html;
+        }
+      }).catch(function(e){
+        document.getElementById("lbListBody").innerHTML = "加载失败：" + escapeHtml(e.message) + "<br><br>请检查网络后重试";
+      });
+
+    document.getElementById("lbReplayBtn").addEventListener("click", function(){
+      var l = document.getElementById("lbListLayer");
+      if(l) l.remove();
+      show("select");
+    });
+    document.getElementById("lbBackGameBtn").addEventListener("click", function(){
+      var l = document.getElementById("lbListLayer");
+      if(l) l.remove();
+      show("map");
+    });
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[<>&"']/g, function(c){
+      return { "<":"&lt;", ">":"&gt;", "&":"&amp;", '"':"&quot;", "'":"&#39;" }[c];
+    });
   }
 
   // 超时兜底：15 秒后无论图片是否加载完都进游戏
