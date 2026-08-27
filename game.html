@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>婚礼大作战</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; -webkit-user-select:none; user-select:none; }
+  html,body { width:100%; height:100%; background:#000; overflow:hidden; }
+  #stage {
+    position:relative; margin:0 auto; overflow:hidden; background:#000;
+    width:100vw; height:100vh;
+    max-width:56.25vh; max-height:177.78vw;
+  }
+  .screen { position:absolute; top:0; left:0; right:0; bottom:0; display:none; }
+  .screen.active { display:block; }
+  video { position:absolute; top:0; left:0; right:0; bottom:0; width:100%; height:100%; object-fit:cover; background:#000; }
+  #gameCanvas { position:absolute; top:0; left:0; right:0; bottom:0; width:100%; height:100%; }
+  #startArea, #groomBtn, #brideBtn, #mapArea, #joinBtn, #mustBtn, #backBtn {
+    position:absolute; cursor:pointer; background:transparent; border:none;
+  }
+  #loading {
+    position:absolute; top:0; left:0; right:0; bottom:0; background:#000; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; z-index:50; color:#fff;
+  }
+  #loading .ring {
+    width:14vw; height:14vw; border:3px solid rgba(255,255,255,.2); border-top-color:#ff5e8a;
+    border-radius:50%; animation:spin 1s linear infinite;
+  }
+  #loading .tip { margin-top:4vw; font-size:3.6vw; color:rgba(255,255,255,.7); }
+  @keyframes spin { to { transform:rotate(360deg); } }
+</style>
+<script>
+/* BGM 自动播放引擎（最早执行）：打开链接即尝试播放，微信 JSBridge 就绪立即播放 */
+(function(){
+  if (window.__bgm) return;
+  var bgm = {
+    audio: null, playing: false, tries: 0, started: false,
+    ensure: function(){
+      if (!this.audio) {
+        try {
+          this.audio = new Audio("assets/bgm_v2.mp3");
+          this.audio.loop = true;
+          this.audio.volume = 0.5;
+          this.audio.preload = "auto";
+        } catch(e) { return null; }
+      }
+      return this.audio;
+    },
+    play: function(){
+      if (this.playing && this.audio && !this.audio.paused) return true;
+      var a = this.ensure();
+      if (!a) return false;
+      try {
+        var p = a.play();
+        if (p && p.then) {
+          p.then(function(){ bgm.playing = true; }).catch(function(){ bgm.playing = false; });
+        } else {
+          this.playing = true;
+        }
+      } catch(e) { return false; }
+      return this.playing;
+    },
+    stop: function(){ if (this.audio) { this.audio.pause(); this.playing = false; } },
+    setVolume: function(v){ if (this.audio) this.audio.volume = v; },
+    start: function(){
+      var self = this;
+      if (this.started) return;
+      this.started = true;
+      // 1. 立即尝试
+      this.play();
+      // 2. 微信 JSBridge 就绪事件（最早挂，防错过）
+      if (window.WeixinJSBridge && window.WeixinJSBridge.invoke) { this.play(); }
+      if (document.addEventListener) {
+        document.addEventListener("WeixinJSBridgeReady", function wxb(){
+          self.play();
+          document.removeEventListener("WeixinJSBridgeReady", wxb);
+        }, false);
+      }
+      // 3. 轮询 WeixinJSBridge 出现（防事件未派发）
+      var poll = 0;
+      var iv1 = setInterval(function(){
+        poll++;
+        if (window.WeixinJSBridge && window.WeixinJSBridge.invoke) { self.play(); clearInterval(iv1); }
+        else if (poll >= 15) { clearInterval(iv1); }
+      }, 200);
+      // 4. 500ms 重试，最长约 6 秒
+      var retry = 0;
+      var iv2 = setInterval(function(){
+        retry++;
+        if (self.playing) { clearInterval(iv2); return; }
+        if (retry >= 12) { clearInterval(iv2); return; }
+        self.play();
+      }, 500);
+    }
+  };
+  window.__bgm = bgm;
+  bgm.start();
+  // 首次用户手势兜底（浏览器硬限制下的最后保障）
+  function once(){ window.__bgm.play(); }
+  if (document.addEventListener) {
+    ["touchstart","click","keydown"].forEach(function(ev){
+      document.addEventListener(ev, once, {once:true, passive:true});
+    });
+  }
+})();
+</script>
+</head>
+<body>
+<div id="stage">
+  <div id="loading"><div class="ring"></div><div class="tip" id="loadTip">加载中 0/5</div></div>
+
+  <!-- 开始 -->
+  <div id="start" class="screen">
+    <video id="vStart" loop muted playsinline webkit-playsinline x5-playsinline x5-video-player-type="h5" x5-video-player-fullscreen="false" poster="assets/poster_start.jpg"></video>
+    <button id="startArea"></button>
+  </div>
+
+  <!-- 选角色 -->
+  <div id="select" class="screen">
+    <video id="vSelect" loop muted playsinline webkit-playsinline x5-playsinline x5-video-player-type="h5" x5-video-player-fullscreen="false" poster="assets/poster_select.jpg"></video>
+    <button id="groomBtn"></button>
+    <button id="brideBtn"></button>
+  </div>
+
+  <!-- 接爱心 -->
+  <div id="game" class="screen">
+    <canvas id="gameCanvas"></canvas>
+  </div>
+
+  <!-- 地图 -->
+  <div id="map" class="screen">
+    <video id="vMap" loop muted playsinline webkit-playsinline x5-playsinline x5-video-player-type="h5" x5-video-player-fullscreen="false" poster="assets/poster_map.jpg"></video>
+    <button id="mapArea"></button>
+    <button id="joinBtn"></button>
+    <button id="mustBtn"></button>
+  </div>
+
+  <!-- 感谢 -->
+  <div id="thanks" class="screen">
+    <video id="vThanks" loop muted playsinline webkit-playsinline x5-playsinline x5-video-player-type="h5" x5-video-player-fullscreen="false" poster="assets/poster_thanks.jpg"></video>
+  </div>
+</div>
+
+<script>
+(function(){
+  const LOGIC_W = 720, LOGIC_H = 1280;
+  const MAP_URL = "https://j.map.baidu.com/0e/uf_h";
+  const stage = document.getElementById("stage");
+
+  const ASSETS = {
+    startV: "assets/start_v2.mp4",
+    selectV:"assets/select_v2.mp4",
+    mapV:   "assets/map_v2.mp4",
+    thanksV:"assets/thanks_v2.mp4",
+    bg:     "assets/img_0.jpg",
+    heartRed:   "assets/img_1.webp",
+    heartYellow:"assets/img_2.webp",
+    brideSheet: "assets/img_3.webp",
+    groomSheet: "assets/img_4.webp",
+    bgm:     "assets/bgm_v2.mp3",
+    btnSound:"assets/btn.mp3",
+    catchSound:"assets/catch.mp3"
+  };
+
+  // ===== 音频系统 =====
+  // BGM 由 head 中的 window.__bgm 引擎管理：打开链接即自动尝试播放，微信 JSBridge 就绪立即播放
+  // 音效仅两个且均为单例：爱心音效（红黄通用）、按键音。同一个实例播放前归零，杜绝叠加。
+  let btnAudio = null;
+  let catchAudio = null;
+
+  function playBgm()   { if (window.__bgm) window.__bgm.play(); }
+  function stopBgm()   { if (window.__bgm) window.__bgm.stop(); }
+  function tryAutoBgm(){ if (window.__bgm) window.__bgm.play(); }
+
+  // 音效单例播放：复用同一实例，先重置到开头再播，杜绝连点/重叠叠加
+  function playSfx(kind) {
+    let el = kind === "btn" ? btnAudio : catchAudio;
+    if (!el) {
+      el = new Audio(kind === "btn" ? ASSETS.btnSound : ASSETS.catchSound);
+      el.volume = 0.8;
+      el.preload = "auto";
+      if (kind === "btn") btnAudio = el; else catchAudio = el;
+    }
+    // 首次创建时音频可能未就绪，currentTime 赋值在部分内核会抛异常，必须保护
+    try { if (el.currentTime > 0.01) el.currentTime = 0; } catch(e) {}
+    var p = el.play();
+    if (p && p.catch) p.catch(function(){});
+  }
+  function playBtnSound()   { playSfx("btn"); }
+  function playCatchSound() { playSfx("catch"); }
+
+  const SHEET_COLS = 10, SHEET_ROWS = 8;
+  const FRAME_COUNT = 76;
+  const CELL_W = 256, CELL_H = 455;
+
+  const CHAR_W = 200, CHAR_H = Math.round(CHAR_W * CELL_H / CELL_W);
+  const GROUND_Y = LOGIC_H - 110;
+
+  let char = null;
+  const game = {
+    canvas:null, ctx:null, scale:1,
+    running:false, lastT:0,
+    hearts:[], spawnTimer:0,
+    charX:LOGIC_W/2, charDir:1, moving:false, bob:0, frameIdx:0, frameTimer:0
+  };
+
+  const RES = {};
+
+  function setTip(t){ const e=document.getElementById("loadTip"); if(e) e.textContent=t; }
+
+  function loadImage(src){
+    return new Promise((res)=>{
+      const i=new Image();
+      i.onload=()=>res(i);
+      i.onerror=()=>{ console.warn("图片加载失败:", src); res(null); }; // 容错：失败也放行
+      i.src=src;
+    });
+  }
+
+  let loadedCount = 0;
+  const TOTAL_IMG = 5;
+
+  function init(){
+    // 微信 X5 内核兼容：统一设置视频属性，避免被强制全屏/层级异常
+    document.querySelectorAll("video").forEach(v=>{
+      v.setAttribute("x5-playsinline","");
+      v.setAttribute("x5-video-player-type","h5");
+      v.setAttribute("x5-video-player-fullscreen","false");
+      v.setAttribute("webkit-playsinline","");
+      v.setAttribute("playsinline","");
+      v.muted = true;
+    });
+
+    // 视频改为懒加载：进哪屏才设 src，避免一次性占满带宽
+    const imgList = [
+      ["bride",  loadImage(ASSETS.brideSheet)],
+      ["groom",  loadImage(ASSETS.groomSheet)],
+      ["hr",     loadImage(ASSETS.heartRed)],
+      ["hy",     loadImage(ASSETS.heartYellow)],
+      ["bg",     loadImage(ASSETS.bg)]
+    ];
+    // 预创建音效实例（提前下载，确保游戏内首次播放即有声音）
+    try {
+      btnAudio = new Audio(ASSETS.btnSound); btnAudio.volume = 0.8; btnAudio.preload = "auto";
+      catchAudio = new Audio(ASSETS.catchSound); catchAudio.volume = 0.8; catchAudio.preload = "auto";
+    } catch(e) {}
+    // Promise 链逐个处理（兼容不支持 async/await 的旧微信 X5 内核）
+    var seq = Promise.resolve();
+    imgList.forEach(function(item){
+      seq = seq.then(function(){
+        return item[1].then(function(img){
+          RES[item[0]] = img;
+          loadedCount++;
+          setTip("加载中 "+loadedCount+"/"+TOTAL_IMG);
+        });
+      });
+    });
+    // 兜底：无论如何都进游戏（即使个别素材失败）
+    return seq.then(function(){ finishLoading(); });
+  }
+
+  function finishLoading(){
+    const l = document.getElementById("loading");
+    if(l) l.style.display = "none";
+    show("start");
+    bindEvents();
+    // BGM 自动播放已在脚本开头处理（立即尝试 + 微信 JSBridge + 首次手势兜底）
+    tryAutoBgm();
+  }
+
+  function show(name){
+    document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+    document.getElementById(name).classList.add("active");
+    // 关闭所有视频
+    ["vStart","vSelect","vMap","vThanks"].forEach(id=>{ pauseVid(id); });
+    // 仅播放当前屏视频
+    if(name==="start")  ensureVideo("vStart",  ASSETS.startV);
+    if(name==="select") ensureVideo("vSelect", ASSETS.selectV);
+    if(name==="map"){
+      ensureVideo("vMap", ASSETS.mapV);
+      // 预加载感谢页视频：玩家看地图页时提前下载，点"参加"后立即播放
+      try {
+        const vt = document.getElementById("vThanks");
+        if(vt && !vt.src){ vt.muted = true; vt.volume = 0; vt.loop = true; vt.preload = "auto"; vt.src = ASSETS.thanksV; }
+      } catch(e){}
+    }
+    if(name==="thanks") ensureVideo("vThanks", ASSETS.thanksV);
+    // 延迟重试一次（覆盖视频数据未就绪导致的播放失败，微信内常见）
+    var vidId = vidFor(name);
+    if(vidId){
+      setTimeout(function(){
+        var v = document.getElementById(vidId);
+        if(v && v.paused){
+          var pv = v.play();
+          if (pv && pv.catch) pv.catch(function(){});
+        }
+      }, 800);
+    }
+    // BGM：单一通用 BGM 贯穿全场，不随场景切换
+    if(name==="game"){ 
+      playBgm();
+      startGame(); 
+    } else {
+      playBgm();
+    }
+    if(name==="thanks"){ if(window.__bgm) window.__bgm.setVolume(0.3); }
+  }
+
+  function vidFor(name){
+    return {"start":"vStart","select":"vSelect","map":"vMap","thanks":"vThanks"}[name] || null;
+  }
+
+  function ensureVideo(id, src){
+    const v=document.getElementById(id);
+    if(!v) return;
+    v.muted = true;
+    v.volume = 0;
+    v.loop = true; // 画面循环播放
+    if(!v.src || v.src.indexOf(src)<0){ v.src = src; }
+    // 视频加载/解码失败兑底：保持 poster 静态画面可见（不黑屏）
+    if(!v._boundErr){
+      v._boundErr = true;
+      v.addEventListener("error", function(){ try{ v.pause(); }catch(e){} });
+    }
+    // 数据就绪后再播一次（提升微信内播放成功率）；readyState 已够则直接播
+    var tryPlay = function(){
+      var pv = v.play();
+      if (pv && pv.catch) pv.catch(function(){});
+    };
+    if (v.readyState >= 3) { tryPlay(); }
+    else {
+      var h1 = function(){ tryPlay(); v.removeEventListener("canplay", h1); };
+      v.addEventListener("canplay", h1);
+      tryPlay();
+    }
+  }
+
+  // 全局手势/微信桥解锁：任何触摸或点击都尝试把已设 src 的视频播起来（微信需手势后才放行视频）
+  function unlockVideos(){
+    ["vStart","vSelect","vMap","vThanks"].forEach(function(id){
+      const v=document.getElementById(id);
+      if(v && v.src && v.paused){
+        var pv = v.play();
+        if (pv && pv.catch) pv.catch(function(){});
+      }
+    });
+  }
+  if(document.addEventListener){
+    document.addEventListener("touchstart", unlockVideos, {passive:true});
+    document.addEventListener("touchend", unlockVideos, {passive:true});
+    document.addEventListener("click", unlockVideos, {passive:true});
+    document.addEventListener("WeixinJSBridgeReady", unlockVideos, false);
+  }
+
+  function pauseVid(id){
+    const v=document.getElementById(id);
+    if(v) v.pause();
+  }
+
+  function bindEvents(){
+    // 开始按钮（底部中央 30%-70% 宽，90%-98% 高）
+    const startArea = document.getElementById("startArea");
+    startArea.style.left = "29%"; startArea.style.right = "29%";
+    startArea.style.top = "88%"; startArea.style.height = "8%";
+    startArea.addEventListener("click", ()=>{
+      playBtnSound();
+      show("select");
+    });
+
+    // 选角色按钮（新素材：男方 x=3% y=82% w=35% h=11%，女方 x=52% y=82% w=35% h=11%）
+    const groomBtn = document.getElementById("groomBtn");
+    groomBtn.style.left = "3%"; groomBtn.style.width = "40%";
+    groomBtn.style.top = "81%"; groomBtn.style.height = "13%";
+    groomBtn.addEventListener("click", ()=>{ char={sheet:RES.groom}; playBtnSound(); show("game"); });
+
+    const brideBtn = document.getElementById("brideBtn");
+    brideBtn.style.left = "50%"; brideBtn.style.width = "40%";
+    brideBtn.style.top = "81%"; brideBtn.style.height = "13%";
+    brideBtn.addEventListener("click", ()=>{ char={sheet:RES.bride}; playBtnSound(); show("game"); });
+
+    // 地图热点（新素材：x=18% y=53% w=62% h=20%，略扩大提升命中率）
+    const mapArea = document.getElementById("mapArea");
+    mapArea.style.left = "14%"; mapArea.style.width = "72%";
+    mapArea.style.top = "50%"; mapArea.style.height = "26%";
+    mapArea.addEventListener("click", openMap);
+    // 安卓微信 click 可能失效，touchstart 直接触发（preventDefault 避免二次触发）
+    mapArea.addEventListener("touchstart", function(e){ e.preventDefault(); openMap(); }, {passive:false});
+
+    // 参加按钮（新素材：x=35% y=87% w=30% h=10%）
+    const joinBtn = document.getElementById("joinBtn");
+    joinBtn.style.left = "32%"; joinBtn.style.width = "36%";
+    joinBtn.style.top = "86%"; joinBtn.style.height = "12%";
+    joinBtn.addEventListener("click", ()=>{
+      playBtnSound();
+      show("thanks");
+    });
+
+    // 隐藏必须参加按钮（新素材无此按钮）
+    const mustBtn = document.getElementById("mustBtn");
+    mustBtn.style.display = "none";
+
+    // 游戏触控
+    const g = document.getElementById("game");
+    g.addEventListener("touchstart", onDown, {passive:false});
+    g.addEventListener("touchmove", onMove, {passive:false});
+    g.addEventListener("touchend", onUp);
+    g.addEventListener("touchcancel", onUp);
+    g.addEventListener("mousedown", onDown);
+    window.addEventListener("mousemove", e=>{ if(game.moving) onMove(e); });
+    window.addEventListener("mouseup", onUp);
+
+
+  }
+
+  function onDown(e){
+    e.preventDefault();
+    const rect = stage.getBoundingClientRect();
+    const cx = (e.touches && e.touches[0]) ? e.touches[0].clientX : e.clientX;
+    const x = (cx - rect.left) / rect.width * LOGIC_W;
+    game.moving = true;
+    game.charDir = (x < game.charX) ? -1 : 1;
+  }
+
+  function onMove(e){
+    if(!game.moving) return;
+    const rect = stage.getBoundingClientRect();
+    const cx = (e.touches && e.touches[0]) ? e.touches[0].clientX : e.clientX;
+    const x = (cx - rect.left) / rect.width * LOGIC_W;
+    game.charDir = (x < game.charX) ? -1 : 1;
+  }
+
+  function onUp(){ game.moving = false; }
+
+  function openMap(){
+    playBtnSound(); // 点击地图也有按键音，明确反馈已点中
+    // 判断设备类型
+    const ua = navigator.userAgent;
+    const isIOS = /iPhone|iPad|iPod/i.test(ua);
+    const isAndroid = /Android/i.test(ua);
+    const webUrl = MAP_URL;
+
+    if (isIOS) {
+      // 苹果：尝试唤起百度地图 APP；1.2 秒后若还在本页则跳网页版（APP 唤起成功时页面挂起，回来时已超时不再跳）
+      const mapAppUrl = "baidumap://map/search?query=" + encodeURIComponent("广州南沙星河吉酒店") + "&region=" + encodeURIComponent("广州") + "&src=andr.qiwoo." + Date.now();
+      const now = Date.now();
+      window.location.href = mapAppUrl;
+      setTimeout(function(){
+        if (Date.now() - now < 2000) { window.location.href = webUrl; }
+      }, 1200);
+    } else if (isAndroid) {
+      // 安卓：baidumap:// scheme 在多数机型静默失败（无任何提示），直接跳网页版最稳
+      window.location.href = webUrl;
+    } else {
+      // 电脑：浏览器新窗口打开
+      window.open(MAP_URL, '_blank');
+    }
+  }
+
+  function startGame(){
+    const canvas = document.getElementById("gameCanvas");
+    game.canvas = canvas;
+    game.ctx = canvas.getContext("2d");
+    resizeCanvas();
+    game.running = true;
+    game.hearts = [];
+    game.spawnTimer = 0.3;
+    game.charX = LOGIC_W / 2;
+    game.charDir = 1;
+    game.moving = false;
+    game.bob = 0;
+    game.frameIdx = 0;
+    game.frameTimer = 0;
+    game.lastT = performance.now();
+    // 预加载地图页视频：接爱心游戏进行中提前下载，切地图页后立即播放（避免微信内卡顿等待）
+    try {
+      const vm = document.getElementById("vMap");
+      if(vm && !vm.src){ vm.muted = true; vm.volume = 0; vm.loop = true; vm.preload = "auto"; vm.src = ASSETS.mapV; }
+    } catch(e){}
+    if(!game._raf) loop(game.lastT);
+  }
+
+  function resizeCanvas(){
+    const canvas = game.canvas, ctx = game.ctx;
+    const rect = stage.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    game.scale = rect.width / LOGIC_W;
+    canvas.width = Math.round(rect.width * dpr);
+    canvas.height = Math.round(rect.height * dpr);
+    const sx = (rect.width * dpr) / LOGIC_W;
+    const sy = (rect.height * dpr) / LOGIC_H;
+    ctx.setTransform(sx, 0, 0, sy, 0, 0);
+  }
+
+  window.addEventListener("resize", ()=>{ if(game.canvas) resizeCanvas(); });
+
+  function loop(now){
+    game._raf = requestAnimationFrame(loop);
+    const dt = Math.min((now - game.lastT) / 1000, 0.05);
+    game.lastT = now;
+    if(!game.running) return;
+    update(dt);
+    render();
+  }
+
+  function update(dt){
+    // 角色移动
+    const speed = 420;
+    if(game.moving){
+      game.charX += game.charDir * speed * dt;
+      game.bob += dt * 12;
+    } else {
+      game.bob += dt * 3;
+    }
+    game.charX = Math.max(CHAR_W/2, Math.min(LOGIC_W - CHAR_W/2, game.charX));
+
+    // 帧动画
+    game.frameTimer += dt;
+    if(game.frameTimer > 0.35){
+      game.frameTimer = 0;
+      game.frameIdx = (game.frameIdx + 1) % FRAME_COUNT;
+    }
+
+    // 生成爱心（数量多，红心从一开始就出现）
+    game.spawnTimer -= dt;
+    if(game.spawnTimer <= 0){
+      spawnHeart();
+      game.spawnTimer = 0.35 + Math.random() * 0.35;
+    }
+
+    // 更新爱心
+    const catchTop = GROUND_Y - CHAR_H * 0.92;
+    const catchBottom = GROUND_Y - CHAR_H * 0.25;
+    const catchLeft = game.charX - CHAR_W * 0.42;
+    const catchRight = game.charX + CHAR_W * 0.42;
+
+    for(let i = game.hearts.length - 1; i >= 0; i--){
+      const h = game.hearts[i];
+      h.y += h.vy * dt;
+      h.rot += h.vr * dt;
+
+      if(!h.caught && h.y > catchTop && h.y < catchBottom && h.x > catchLeft && h.x < catchRight){
+        h.caught = true;
+        if(h.red){
+          game.running = false;
+          playCatchSound();
+          // 同步切换地图页：保持"触摸手势事件流"内切换，iOS/安卓微信才会放行视频自动播放（setTimeout 会失去手势上下文被拦）
+          show("map");
+          return;
+        }
+        // 黄心碰到角色：也播放爱心音效（用户要求：红黄爱心共用爱心音效）
+        playCatchSound();
+        game.hearts.splice(i, 1);
+      } else if(h.y > LOGIC_H + 80){
+        game.hearts.splice(i, 1);
+      }
+    }
+  }
+
+  function spawnHeart(){
+    const red = Math.random() < 0.25;
+    const r = red ? 56 : 50 + Math.random() * 10;
+    game.hearts.push({
+      x: 60 + Math.random() * (LOGIC_W - 120),
+      y: -r - 10,
+      vy: 240 + Math.random() * 160,
+      r: r,
+      red: red,
+      rot: (Math.random() * 2 - 1) * 0.3,
+      vr: (Math.random() * 2 - 1) * 0.6,
+      caught: false
+    });
+  }
+
+  function render(){
+    const ctx = game.ctx;
+    ctx.clearRect(0, 0, LOGIC_W, LOGIC_H);
+
+    // 背景
+    if(RES.bg) ctx.drawImage(RES.bg, 0, 0, LOGIC_W, LOGIC_H);
+
+    // 爱心
+    for(const h of game.hearts){
+      const img = h.red ? RES.hr : RES.hy;
+      if(!img) continue;
+      ctx.save();
+      ctx.translate(h.x, h.y);
+      ctx.rotate(h.rot);
+      ctx.drawImage(img, -h.r, -h.r, h.r * 2, h.r * 2);
+      ctx.restore();
+    }
+
+    // 角色（新娘素材本身朝左，不做镜像翻转）
+    if(char){
+      const bobY = Math.sin(game.bob) * (game.moving ? 6 : 2);
+      const breathe = 1 + Math.sin(game.bob * 0.8) * 0.02;
+      const w = CHAR_W * breathe, h = CHAR_H * breathe;
+      const dx = game.charX - w / 2;
+      const dy = GROUND_Y - h + bobY;
+      const sx = (game.frameIdx % SHEET_COLS) * CELL_W;
+      const sy = Math.floor(game.frameIdx / SHEET_COLS) * CELL_H;
+      ctx.save();
+      ctx.shadowColor = "rgba(255,240,245,0.6)";
+      ctx.shadowBlur = 10;
+      // 角色随移动方向翻转：向左走镜像，向右走正常（男女统一，素材为正面/轻微侧身）
+      if(game.charDir < 0){
+        ctx.translate(dx + w, dy);
+        ctx.scale(-1, 1);
+        ctx.drawImage(char.sheet, sx, sy, CELL_W, CELL_H, 0, 0, w, h);
+      } else {
+        ctx.drawImage(char.sheet, sx, sy, CELL_W, CELL_H, dx, dy, w, h);
+      }
+      ctx.restore();
+    }
+  }
+
+  // 超时兜底：15 秒后无论图片是否加载完都进游戏
+  setTimeout(()=>{ if(document.getElementById("loading").style.display !== "none"){ setTip("网络较慢，进入中…"); finishLoading(); } }, 15000);
+
+  init().catch(err=>{
+    console.error(err);
+    finishLoading(); // 任何异常都先放行，不卡死在转圈
+  });
+})();
+</script>
+</body>
+</html>
