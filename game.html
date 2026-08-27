@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -159,6 +159,8 @@
     heartYellow:"assets/img_2.webp",
     brideSheet: "assets/img_3.webp",
     groomSheet: "assets/img_4.webp",
+    ring:      "assets/ring.webp",
+    letter:    "assets/letter.webp",
     bgm:     "assets/bgm_v2.mp3",
     btnSound:"assets/btn.mp3",
     catchSound:"assets/catch.mp3"
@@ -201,7 +203,7 @@
   let char = null;
   const game = {
     canvas:null, ctx:null, scale:1,
-    running:false, lastT:0, score:0, target:5,
+    running:false, lastT:0, score:0, isNeg:false,
     hearts:[], spawnTimer:0,
     charX:LOGIC_W/2, charDir:1, moving:false, bob:0, frameIdx:0, frameTimer:0
   };
@@ -220,7 +222,7 @@
   }
 
   let loadedCount = 0;
-  const TOTAL_IMG = 5;
+  const TOTAL_IMG = 7;
 
   function init(){
     // 微信 X5 内核兼容：统一设置视频属性，避免被强制全屏/层级异常
@@ -239,6 +241,8 @@
       ["groom",  loadImage(ASSETS.groomSheet)],
       ["hr",     loadImage(ASSETS.heartRed)],
       ["hy",     loadImage(ASSETS.heartYellow)],
+      ["ring",   loadImage(ASSETS.ring)],
+      ["letter", loadImage(ASSETS.letter)],
       ["bg",     loadImage(ASSETS.bg)]
     ];
     // 预创建音效实例（提前下载，确保游戏内首次播放即有声音）
@@ -466,7 +470,7 @@
     game.running = true;
     game.hearts = [];
     game.score = 0;
-    game.target = 5;
+    game.isNeg = false;
     game.spawnTimer = 0.3;
     game.charX = LOGIC_W / 2;
     game.charDir = 1;
@@ -544,20 +548,41 @@
 
       if(!h.caught && h.y > catchTop && h.y < catchBottom && h.x > catchLeft && h.x < catchRight){
         h.caught = true;
-        if(h.red){
-          game.score++;
+        if(h.type === 'red'){
+          // 红心 +10
+          game.score += 10;
           game.hearts.splice(i, 1);
           playCatchSound();
-          // 满 N 颗红心 → 显示"输入名字"上分页
-          if(game.score >= game.target){
-            game.running = false;
-            showNameInput();
-          }
+        } else if(h.type === 'yellow'){
+          // 黄心 -20
+          game.score -= 20;
+          game.hearts.splice(i, 1);
+          playSound("btn");
+        } else if(h.type === 'ring'){
+          // 戒指 +50
+          game.score += 50;
+          game.hearts.splice(i, 1);
+          playCatchSound();
+        } else if(h.type === 'letter'){
+          // 请帖 = 游戏结束
+          game.running = false;
+          playSound("btn");
+          game.hearts.splice(i, 1);
+          showGameOver("letter");
           return;
         }
-        // 黄心碰到角色：也播放爱心音效（用户要求：红黄爱心共用爱心音效）
-        playCatchSound();
-        game.hearts.splice(i, 1);
+        // 负分 → 游戏结束
+        if(game.score < 0){
+          game.isNeg = true;
+          game.running = false;
+          showGameOver("neg");
+          return;
+        }
+        // 正分且不为零 → 继续
+        if(game.score > 0){
+          game.isNeg = false;
+        }
+        // 接住红心/戒指后加分 → 继续
       } else if(h.y > LOGIC_H + 80){
         game.hearts.splice(i, 1);
       }
@@ -565,14 +590,28 @@
   }
 
   function spawnHeart(){
-    const red = Math.random() < 0.25;
-    const r = red ? 56 : 50 + Math.random() * 10;
+    // 概率：红心 40%，黄心 40%，戒指 8%，请帖 12%
+    var rand = Math.random();
+    var type;
+    if(rand < 0.40){ type = 'red'; }
+    else if(rand < 0.80){ type = 'yellow'; }
+    else if(rand < 0.88){ type = 'ring'; }
+    else { type = 'letter'; }
+
+    var r, imgSrc;
+    if(type === 'ring'){
+      r = 44;
+    } else if(type === 'letter'){
+      r = 50;
+    } else {
+      r = type === 'red' ? (56 + Math.random() * 10) : (50 + Math.random() * 10);
+    }
     game.hearts.push({
       x: 60 + Math.random() * (LOGIC_W - 120),
       y: -r - 10,
       vy: 240 + Math.random() * 160,
       r: r,
-      red: red,
+      type: type,
       rot: (Math.random() * 2 - 1) * 0.3,
       vr: (Math.random() * 2 - 1) * 0.6,
       caught: false
@@ -591,7 +630,37 @@
 
     // 爱心
     for(const h of game.hearts){
-      const img = h.red ? RES.hr : RES.hy;
+      var img;
+      if(h.type === 'red'){ img = RES.hr; }
+      else if(h.type === 'yellow'){ img = RES.hy; }
+      else if(h.type === 'ring'){ img = RES.ring; }
+      else if(h.type === 'letter'){ img = RES.letter; }
+      if(!img) continue;
+      ctx.save();
+      ctx.translate(h.x, h.y);
+      ctx.rotate(h.rot);
+      ctx.drawImage(img, -h.r, -h.r, h.r * 2, h.r * 2);
+      ctx.restore();
+    }
+  }
+
+  function render(){
+    const ctx = game.ctx;
+    ctx.clearRect(0, 0, LOGIC_W, LOGIC_H);
+
+    // 背景
+    if(RES.bg) ctx.drawImage(RES.bg, 0, 0, LOGIC_W, LOGIC_H);
+
+    // 顶部积分 HUD
+    drawScoreHud(ctx);
+
+    // 爱心 / 戒指 / 请帖
+    for(const h of game.hearts){
+      var img;
+      if(h.type === 'red'){ img = RES.hr; }
+      else if(h.type === 'yellow'){ img = RES.hy; }
+      else if(h.type === 'ring'){ img = RES.ring; }
+      else if(h.type === 'letter'){ img = RES.letter; }
       if(!img) continue;
       ctx.save();
       ctx.translate(h.x, h.y);
@@ -625,16 +694,22 @@
   }
 
   function drawScoreHud(ctx){
-    const w = 240, h = 78, x = LOGIC_W/2 - w/2, y = 60;
+    var w, h, x, y, bgColor, scoreColor;
+    var isNegScore = game.score < 0;
+    w = 280; h = 78; x = LOGIC_W/2 - w/2; y = 60;
+    bgColor = isNegScore ? "rgba(80,0,0,0.9)" : (game.score > 0 ? "rgba(192,8,30,0.85)" : "rgba(50,50,50,0.85)");
+    scoreColor = isNegScore ? "#FF4444" : (game.score >= 50 ? "#00FF88" : "#FFE680");
     ctx.save();
-    ctx.fillStyle = "rgba(192,8,30,0.85)";
+    ctx.fillStyle = bgColor;
     roundRect(ctx, x, y, w, h, 18);
     ctx.fill();
-    ctx.fillStyle = "#FFE680";
+    ctx.fillStyle = scoreColor;
     ctx.font = "bold 36px sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText("♥ " + game.score + " / " + game.target, LOGIC_W/2, y + h/2);
+    var scoreText = game.score + " 分";
+    if(game.score >= 50){ scoreText += " 🔥"; }
+    ctx.fillText(scoreText, LOGIC_W/2, y + h/2);
     ctx.restore();
   }
 
@@ -650,6 +725,37 @@
     ctx.lineTo(x, y+r);
     ctx.quadraticCurveTo(x, y, x+r, y);
     ctx.closePath();
+  }
+
+  // ===== 游戏结束弹层 =====
+  function showGameOver(reason){
+    playBgm();
+    var isNeg = (reason === "neg");
+    var title = isNeg ? "💔 游戏结束" : "💌 收到请柬！";
+    var sub = isNeg
+      ? "分数变负了，重新挑战吧！"
+      : "婚礼请柬已送达，游戏结束！";
+    var scoreColor = game.score < 0 ? "#FF4444" : (game.score >= 50 ? "#00FF88" : "#FFE680");
+    var layer = document.createElement("div");
+    layer.id = "lbInputLayer";
+    layer.style.cssText = "position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:100;display:flex;align-items:center;justify-content:center;flex-direction:column;";
+    layer.innerHTML = ''
+      + '<div style="background:linear-gradient(135deg,#c8001e,#8b0000);border:3px solid #FFD700;border-radius:20px;padding:6vw 4vw;width:82%;text-align:center;color:#fff;">'
+      +   '<div style="font-size:8vw;color:#FFD700;margin-bottom:2vw;">' + title + '</div>'
+      +   '<div style="font-size:4.5vw;color:rgba(255,255,255,.8);margin-bottom:2vw;">' + sub + '</div>'
+      +   '<div style="font-size:14vw;color:' + scoreColor + ';font-weight:bold;margin:2vw 0 4vw;text-shadow:0 0 20px ' + scoreColor + ';">' + game.score + ' 分</div>'
+      +   '<button id="goReplayBtn" style="display:block;width:90%;margin:0 auto 2vw;padding:3vw;font-size:5.5vw;background:#FFD700;color:#8b0000;border:none;border-radius:10px;font-weight:bold;">再玩一次</button>'
+      +   '<button id="goRankBtn" style="display:block;width:90%;margin:0 auto;padding:3vw;font-size:5vw;background:transparent;color:#FFD700;border:2px solid #FFD700;border-radius:10px;">查看排行榜</button>'
+      + '</div>';
+    stage.appendChild(layer);
+    document.getElementById("goReplayBtn").addEventListener("click", function(){
+      var l = document.getElementById("lbInputLayer");
+      if(l) l.remove();
+      show("select");
+    });
+    document.getElementById("goRankBtn").addEventListener("click", function(){
+      showLeaderboard();
+    });
   }
 
   // ===== 排行榜系统（GitHub Issues 当后端） =====
