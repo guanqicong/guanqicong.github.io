@@ -40,7 +40,7 @@
     ensure: function(){
       if (!this.audio) {
         try {
-          this.audio = new Audio("assets/bgm_v2.mp3");
+          this.audio = new Audio("assets/bgm_v2.mp?t=1788781981"");
           this.audio.loop = true;
           this.audio.volume = 0.5;
           this.audio.preload = "auto";
@@ -113,13 +113,13 @@
 
   <!-- 开始 -->
   <div id="start" class="screen">
-    <video id="vStart" loop muted playsinline webkit-playsinline x5-playsinline x5-video-player-type="h5" x5-video-player-fullscreen="false" poster="assets/poster_start.jpg"></video>
+    <video id="vStart" loop muted playsinline webkit-playsinline x5-playsinline x5-video-player-type="h5" x5-video-player-fullscreen="false" poster="assets/poster_start.jp?t=1788781981""></video>
     <button id="startArea"></button>
   </div>
 
   <!-- 选角色 -->
   <div id="select" class="screen">
-    <video id="vSelect" loop muted playsinline webkit-playsinline x5-playsinline x5-video-player-type="h5" x5-video-player-fullscreen="false" poster="assets/poster_select.jpg"></video>
+    <video id="vSelect" loop muted playsinline webkit-playsinline x5-playsinline x5-video-player-type="h5" x5-video-player-fullscreen="false" poster="assets/poster_select.jp?t=1788781981""></video>
     <button id="groomBtn"></button>
     <button id="brideBtn"></button>
   </div>
@@ -131,7 +131,7 @@
 
   <!-- 地图 -->
   <div id="map" class="screen">
-    <video id="vMap" loop muted playsinline webkit-playsinline x5-playsinline x5-video-player-type="h5" x5-video-player-fullscreen="false" poster="assets/poster_map.jpg"></video>
+    <video id="vMap" loop muted playsinline webkit-playsinline x5-playsinline x5-video-player-type="h5" x5-video-player-fullscreen="false" poster="assets/poster_map.jp?t=1788781981""></video>
     <button id="mapArea"></button>
     <button id="joinBtn"></button>
     <button id="mustBtn"></button>
@@ -139,7 +139,7 @@
 
   <!-- 感谢 -->
   <div id="thanks" class="screen">
-    <video id="vThanks" loop muted playsinline webkit-playsinline x5-playsinline x5-video-player-type="h5" x5-video-player-fullscreen="false" poster="assets/poster_thanks.jpg"></video>
+    <video id="vThanks" loop muted playsinline webkit-playsinline x5-playsinline x5-video-player-type="h5" x5-video-player-fullscreen="false" poster="assets/poster_thanks.jp?t=1788781981""></video>
   </div>
 </div>
 
@@ -157,20 +157,20 @@ const LOGIC_W = 720, LOGIC_H = 1280;
   const stage = document.getElementById("stage");
 
   const ASSETS = {
-    startV: "assets/start_v2.mp4",
-    selectV:"assets/select_v2.mp4",
-    mapV:   "assets/map_v2.mp4",
-    thanksV:"assets/thanks_v2.mp4",
-    bg:     "assets/img_0.jpg",
-    heartRed:   "assets/img_1.webp",
-    heartYellow:"assets/img_2.webp",
-    brideSheet: "assets/img_3.webp",
-    groomSheet: "assets/img_4.webp",
-    ring:      "assets/ring.png",
-    letter:    "assets/letter.png",
-    bgm:     "assets/bgm_v2.mp3",
-    btnSound:"assets/btn.mp3",
-    catchSound:"assets/catch.mp3"
+    startV: "assets/start_v2.mp?t=1788781981"",
+    selectV:"assets/select_v2.mp?t=1788781981"",
+    mapV:   "assets/map_v2.mp?t=1788781981"",
+    thanksV:"assets/thanks_v2.mp?t=1788781981"",
+    bg:     "assets/img_0.jp?t=1788781981"",
+    heartRed:   "assets/img_1.web?t=1788781981"",
+    heartYellow:"assets/img_2.web?t=1788781981"",
+    brideSheet: "assets/img_3.web?t=1788781981"",
+    groomSheet: "assets/img_4.web?t=1788781981"",
+    ring:      "assets/ring.pn?t=1788781981"",
+    letter:    "assets/letter.pn?t=1788781981"",
+    bgm:     "assets/bgm_v2.mp?t=1788781981"",
+    btnSound:"assets/btn.mp?t=1788781981"",
+    catchSound:"assets/catch.mp?t=1788781981""
   };
 
   // ===== 音频系统 =====
