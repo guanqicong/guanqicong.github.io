@@ -565,13 +565,13 @@ const LOGIC_W = 720, LOGIC_H = 1280;
         '</div>',
         '<div class="rule-row">',
           '<div class="rule-icon rule-letter">&#x2709;&#xFE0F;</div>',
-          '<div class="rule-text">收到<span style="color:#FFD700;font-weight:bold">请帖</span></div>',
-          '<div class="rule-score neg">游戏结束</div>',
+          '<div class="rule-text">收到<span style="color:#FFD700;font-weight:bold">请帖</span>（不玩游戏也送祝福）</div>',
+          '<div class="rule-score" style="color:#90EE90;font-size:22px;">送祝福！</div>',
         '</div>',
         '<div class="rule-row">',
           '<div class="rule-icon" style="background:#555;color:#fff;font-size:18px;">&#x2193;</div>',
           '<div class="rule-text">分数变成<span style="color:#FF6B6B;font-weight:bold">负数</span></div>',
-          '<div class="rule-score neg">游戏结束</div>',
+          '<div class="rule-score" style="color:#90EE90;font-size:22px;">送祝福！</div>',
         '</div>',
         '<div class="rule-note">&#x1F389; 接到红心/戒指得分<br>&#x26A0;&#xFE0F; 躲开黄心和请帖！</div>',
         '<button class="help-close" onclick="document.getElementById(\x27helpModal\x27).classList.remove(\x27show\x27)">知道了！</button>',
@@ -728,7 +728,7 @@ function onDown(e){
           game.hearts.splice(i, 1);
           playCatchSound();
         } else if(h.type === 'letter'){
-          // 请帖 = 游戏结束
+          // 请帖 = 祝福送到
           game.running = false;
           playBtnSound("btn");
           game.hearts.splice(i, 1);
@@ -899,8 +899,8 @@ function onDown(e){
   function showGameOver(reason){
     playBgm();
     var isNeg = (reason === "neg");
-    var title = isNeg ? "游戏结束" : "收到请柬！";
-    var sub = isNeg ? "分数变负了，重新挑战！" : "婚礼请柬已送达！";
+    var title = isNeg ? "本次挑战结束" : "祝福送到！";
+    var sub = isNeg ? "分数不够，继续加油！" : "祝福已收到，感谢参与！";
     var scoreColor = game.score < 0 ? "#FF4444" : (game.score >= 50 ? "#00FF88" : "#FFE680");
 
     // 计算舞台实际渲染尺寸，用于同步缩放
