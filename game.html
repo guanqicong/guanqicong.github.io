@@ -923,20 +923,21 @@ const LOGIC_W = 720, LOGIC_H = 1280;
 
 // 假数据 fallback
   var FAKE_LB = [
-    {name:"关奇聪",score:5230},{name:"林小雨",score:4890},{name:"王美丽",score:4350},
-    {name:"李大壮",score:3920},{name:"张明轩",score:3410},{name:"刘芳芳",score:2780},
-    {name:"周杰杰",score:2150},{name:"吴敏敏",score:1620},{name:"郑伟伟",score:980},
-    {name:"孙丽丽",score:520},{name:"赵小刚",score:380},{name:"钱小花",score:250}
+    {name:"林志远",score:6850},{name:"王诗晴",score:3520},{name:"张浩然",score:2890},
+    {name:"陈思琪",score:1840},{name:"李明辉",score:1560},{name:"周雨彤",score:1280},
+    {name:"吴俊杰",score:960},{name:"郑雅婷",score:750},{name:"徐子轩",score:640},{name:"孙梦瑶",score:620}
   ];
   var LB_TOKEN = (["github_pat_11CMWBH2A0kDm","judpMod1m_RPF3Zhm4PXL7nS","4N6TwWUXPSusqaiWAXwl8mLx","yMi9ZZLDYI4YAfVI4oA8h"].join(""));
-  function submitScore(name, score){
+  
+function maskName(n){if(!n||n.length<=1)return n||"";return n[0]+"*".repeat(n.length-1);}
+function submitScore(name, score){
     var x = new XMLHttpRequest();
     x.open("POST","https://api.github.com/repos/guanqicong/guanqicong.github.io/issues",true);
     x.setRequestHeader("Accept","application/vnd.github+json");
     x.setRequestHeader("Authorization","Bearer "+LB_TOKEN);
     x.setRequestHeader("Content-Type","application/json");
     x.onload=function(){
-      if(x.status===200||x.status===201){alert("上榜成功！");fetchLB();}else{alert("上传失败("+x.status+")");}
+      if(x.status===200||x.status===201){alert("上榜成功！");fetchLB();setTimeout(fetchLB,2000);}else{alert("上传失败("+x.status+")");}
     };
     x.onerror=function(){alert("网络错误");};
     x.send(JSON.stringify({title:"[LB] "+name+" "+score,body:"得分上榜："+name+" = "+score+" 分"}));
@@ -957,7 +958,7 @@ function fetchLB(){
         var bg = k%2===0?"rgba(255,255,255,.06)":"rgba(0,0,0,.15)";
         html += '<div style="display:flex;align-items:center;padding:.5vh 1.5vw;border-radius:4px;margin-bottom:.25vh;background:'+bg+';line-height:1.3;">'
           + '<div style="width:7vw;text-align:center;font-size:3vw;">'+medal+'</div>'
-          + '<div style="flex:1;color:'+rowColor+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 1vw;">'+row.name+'</div>'
+          + '<div style="flex:1;color:'+rowColor+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 1vw;">'+maskName(row.name)+'</div>'
           + '<div style="width:13vw;text-align:right;color:'+rowColor+';font-weight:bold;">'+row.score+' 分</div>'
         + '</div>';
       }
