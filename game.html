@@ -744,24 +744,28 @@ const LOGIC_W = 720, LOGIC_H = 1280;
 
     var layer = document.createElement("div");
     layer.id = "lbInputLayer";
-    layer.style.cssText = "position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.92);z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:1.5vh 0;box-sizing:border-box;overflow:hidden;";
+    // 根据 stage 实际渲染高度设置基准字号（1em = 1% 画布高）
+    var stageEl = document.getElementById("stage");
+    var sRect = stageEl.getBoundingClientRect();
+    var baseFont = sRect.height / 100;
+    layer.style.cssText = "position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.92);z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:1.5em 0;box-sizing:border-box;overflow:hidden;font-size:" + baseFont + "px;";
 
     layer.innerHTML = ''
-      + '<div style="background:linear-gradient(135deg,#c8001e,#8b0000);border:2.5px solid #FFD700;border-radius:14px;width:90%;display:flex;flex-direction:column;align-items:center;padding:1.2vh 0;color:#fff;box-sizing:border-box;">'
-      +   '<div style="font-size:4.5vw;color:#FFD700;line-height:1;">' + title + '</div>'
-      +   '<div style="font-size:2.4vw;color:rgba(255,255,255,.85);margin:.3vh 0;line-height:1;">' + sub + '</div>'
-      +   '<div style="font-size:8vw;color:' + scoreColor + ';font-weight:bold;line-height:1;text-shadow:0 0 12px ' + scoreColor + ';">' + game.score + ' 分</div>'
-      +   '<div style="display:flex;justify-content:center;align-items:center;gap:1.2vw;width:88%;margin:.5vh 0;">'
-      +     '<input id="lbName" type="text" placeholder="输入名字上榜(可选)" maxlength="8" style="flex:1;padding:1vh 2vw;font-size:3.2vw;border-radius:5px;border:1.5px solid #FFD700;text-align:center;background:#fff;color:#333;outline:none;box-sizing:border-box;" />'
-      +     '<button id="lbSubmitBtn" style="padding:1vh 2.5vw;font-size:3.2vw;background:#FFD700;color:#8b0000;border:none;border-radius:5px;font-weight:bold;white-space:nowrap;">上传</button>'
+      + '<div style="background:linear-gradient(135deg,#c8001e,#8b0000);border:.3em solid #FFD700;border-radius:1.6em;width:90%;display:flex;flex-direction:column;align-items:center;padding:1.2em 0;color:#fff;box-sizing:border-box;">'
+      +   '<div style="font-size:4.5em;color:#FFD700;line-height:1;">' + title + '</div>'
+      +   '<div style="font-size:2.4em;color:rgba(255,255,255,.85);margin:.3em 0;line-height:1;">' + sub + '</div>'
+      +   '<div style="font-size:8em;color:' + scoreColor + ';font-weight:bold;line-height:1;text-shadow:0 0 1.5em ' + scoreColor + ';">' + game.score + ' 分</div>'
+      +   '<div style="display:flex;justify-content:center;align-items:center;gap:.5em;width:88%;margin:.5em 0;">'
+      +     '<input id="lbName" type="text" placeholder="输入名字上榜(可选)" maxlength="8" style="flex:1;padding:1em 1.5em;font-size:2.8em;border-radius:.5em;border:.2em solid #FFD700;text-align:center;background:#fff;color:#333;outline:none;box-sizing:border-box;height:3.5em;" />'
+      +     '<button id="lbSubmitBtn" style="padding:1em 1.5em;font-size:2.8em;background:#FFD700;color:#8b0000;border:none;border-radius:.5em;font-weight:bold;white-space:nowrap;height:3.5em;box-sizing:border-box;">上传</button>'
       +   '</div>'
-      +   '<div style="color:#FFD700;font-size:3vw;margin:.2vh 0;line-height:1;">&#x1F3C6; 前十排行榜</div>'
-      +   '<div id="lb-rows" style="width:88%;height:18vh;overflow-y:auto;font-size:2.8vw;text-align:left;background:rgba(0,0,0,.25);border-radius:6px;padding:.5vh 1vw;box-sizing:border-box;"><div style="color:#FFD700;text-align:center;padding:1vh;">加载中…</div></div>'
-      +   '<div style="display:flex;flex-direction:column;gap:.8vh;width:88%;margin:.8vh 0 0;">'
-      +     '<button id="goJoinBtn" style="padding:1.8vh;font-size:3.8vw;background:#FFD700;color:#8b0000;border:none;border-radius:8px;font-weight:bold;">&#x2764; 参与婚礼</button>'
-      +     '<div style="display:flex;gap:1.5vw;">'
-      +       '<button id="goReplayBtn" style="flex:1;padding:1.5vh;font-size:3.4vw;background:rgba(255,255,255,.12);color:#FFD700;border:1.5px solid #FFD700;border-radius:8px;font-weight:bold;">&#x1F504; 再玩一次</button>'
-      +       '<button id="goLeaderBtn" style="flex:1;padding:1.5vh;font-size:3.4vw;background:rgba(255,255,255,.12);color:#FFD700;border:1.5px solid #FFD700;border-radius:8px;font-weight:bold;">&#x1F3C6; 查看排行榜</button>'
+      +   '<div style="color:#FFD700;font-size:2.8em;margin:.2em 0;line-height:1;">&#x1F3C6; 前十排行榜</div>'
+      +   '<div id="lb-rows" style="width:88%;height:18em;overflow-y:auto;font-size:2.4em;text-align:left;background:rgba(0,0,0,.25);border-radius:.5em;padding:.5em .8em;box-sizing:border-box;line-height:1.4;"><div style="color:#FFD700;text-align:center;padding:1em;">加载中…</div></div>'
+      +   '<div style="display:flex;flex-direction:column;gap:.8em;width:88%;margin:.8em 0 0;">'
+      +     '<button id="goJoinBtn" style="padding:1.5em;font-size:3.4em;background:#FFD700;color:#8b0000;border:none;border-radius:.8em;font-weight:bold;">&#x2764; 参与婚礼</button>'
+      +     '<div style="display:flex;gap:1em;">'
+      +       '<button id="goReplayBtn" style="flex:1;padding:1.2em;font-size:3em;background:rgba(255,255,255,.12);color:#FFD700;border:.15em solid #FFD700;border-radius:.8em;font-weight:bold;">&#x1F504; 再玩一次</button>'
+      +       '<button id="goLeaderBtn" style="flex:1;padding:1.2em;font-size:3em;background:rgba(255,255,255,.12);color:#FFD700;border:.15em solid #FFD700;border-radius:.8em;font-weight:bold;">&#x1F3C6; 查看排行榜</button>'
       +     '</div>'
       +   '</div>'
       + '</div>';
@@ -787,59 +791,24 @@ const LOGIC_W = 720, LOGIC_H = 1280;
     fetchLB();
   }
 
-
-  // 假数据 fallback - 没人玩时显示，最高 5230 分
-  
-  var LB_TOKEN = (["github_pat_11CMWBH2A0kDm","judpMod1m_RPF3Zhm4PXL7nS","4N6TwWUXPSusqaiWAXwl8mLx","yMi9ZZLDYI4YAfVI4oA8h"].join(""));
-  function submitScore(name, score){
-    var x = new XMLHttpRequest();
-    x.open("POST", "https://api.github.com/repos/guanqicong/guanqicong.github.io/issues", true);
-    x.setRequestHeader("Accept", "application/vnd.github+json");
-    x.setRequestHeader("Authorization", "Bearer " + LB_TOKEN);
-    x.setRequestHeader("Content-Type", "application/json");
-    x.onload = function(){
-      if(x.status === 200 || x.status === 201){
-        alert("上榜成功！");
-        fetchLB();
-      } else {
-        alert("上传失败 (" + x.status + ")");
-      }
-    };
-    x.onerror = function(){ alert("网络错误"); };
-    x.send(JSON.stringify({title: "[LB] " + name + " " + score, body: "得分上榜：" + name + " = " + score + " 分"}));
-  }
-
-var FAKE_LB = [
-    {name:"关奇聪", score:5230},
-    {name:"林小雨", score:4890},
-    {name:"王美丽", score:4350},
-    {name:"李大壮", score:3920},
-    {name:"张明轩", score:3410},
-    {name:"刘芳芳", score:2780},
-    {name:"周杰杰", score:2150},
-    {name:"吴敏敏", score:1620},
-    {name:"郑伟伟", score:980},
-    {name:"孙丽丽", score:520},
-    {name:"赵小刚", score:380},
-    {name:"钱小花", score:250}
-  ];
-
-
-  function showLeaderboardModal(){
+function showLeaderboardModal(){
     var layer = document.createElement("div");
     layer.id = "lbModal";
-    layer.style.cssText = "position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.95);z-index:200;display:flex;flex-direction:column;align-items:center;padding:2vh 0;box-sizing:border-box;overflow:hidden;";
+    var stageEl = document.getElementById("stage");
+    var sRect = stageEl.getBoundingClientRect();
+    var baseFont = sRect.height / 100;
+    layer.style.cssText = "position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.95);z-index:200;display:flex;flex-direction:column;align-items:center;padding:2em 0;box-sizing:border-box;overflow:hidden;font-size:" + baseFont + "px;";
+
     layer.innerHTML = ''
-      + '<div style="color:#FFD700;font-size:5vw;margin-bottom:1vh;">&#x1F3C6; 完整排行榜</div>'
-      + '<div id="lbModal-rows" style="width:90%;height:80vh;overflow-y:auto;background:rgba(200,0,30,.15);border:2px solid #FFD700;border-radius:10px;padding:1.5vh 2vw;font-size:3.5vw;color:#fff;text-align:left;"></div>'
-      + '<button id="lbModalClose" style="margin-top:1.5vh;padding:1.5vh 6vw;font-size:4vw;background:#FFD700;color:#8b0000;border:none;border-radius:8px;font-weight:bold;">关闭</button>';
+      + '<div style="color:#FFD700;font-size:4.5em;margin-bottom:1em;">&#x1F3C6; 完整排行榜</div>'
+      + '<div id="lbModal-rows" style="width:90%;height:70em;overflow-y:auto;background:rgba(200,0,30,.15);border:.2em solid #FFD700;border-radius:1em;padding:1.2em 1.5em;font-size:3em;color:#fff;text-align:left;line-height:1.4;"></div>'
+      + '<button id="lbModalClose" style="margin-top:1.5em;padding:1.2em 4em;font-size:3.4em;background:#FFD700;color:#8b0000;border:none;border-radius:.8em;font-weight:bold;">关闭</button>';
     stage.appendChild(layer);
 
     document.getElementById("lbModalClose").addEventListener("click", function(){
       var m = document.getElementById("lbModal"); if(m) m.remove();
     });
 
-    // 拉数据
     var list = document.getElementById("lbModal-rows");
     var data = FAKE_LB.slice();
     function render(arr){
@@ -850,16 +819,15 @@ var FAKE_LB = [
         var medal = k===0?"&#x1F947;":k===1?"&#x1F948;":k===2?"&#x1F949;":"<b>"+(k+1)+"</b>";
         var rowColor = k===0?"#FFD700":k===1?"#C0C0C0":k===2?"#CD7F32":"#fff";
         var bg = k%2===0?"rgba(255,255,255,.05)":"rgba(0,0,0,.15)";
-        html += '<div style="display:flex;align-items:center;padding:1vh 2vw;border-radius:5px;margin-bottom:.5vh;background:'+bg+';">'
-          + '<div style="width:8vw;text-align:center;font-size:3.5vw;">'+medal+'</div>'
-          + '<div style="flex:1;color:'+rowColor+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 1vw;">'+row.name+'</div>'
-          + '<div style="width:16vw;text-align:right;color:'+rowColor+';font-weight:bold;">'+row.score+' 分</div>'
+        html += '<div style="display:flex;align-items:center;padding:.8em 1.5em;border-radius:.5em;margin-bottom:.4em;background:'+bg+';">'
+          + '<div style="width:3em;text-align:center;font-size:1.2em;">'+medal+'</div>'
+          + '<div style="flex:1;color:'+rowColor+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 .8em;">'+row.name+'</div>'
+          + '<div style="width:5em;text-align:right;color:'+rowColor+';font-weight:bold;">'+row.score+' 分</div>'
         + '</div>';
       }
       list.innerHTML = html;
     }
     render(data);
-    // 拉真实数据
     try {
       var x = new XMLHttpRequest();
       x.open("GET", "https://api.github.com/repos/guanqicong/guanqicong.github.io/issues?state=open&per_page=100", true);
@@ -878,6 +846,43 @@ var FAKE_LB = [
       };
       x.send();
     } catch(e){}
+  }
+
+// 假数据 fallback - 没人玩时显示
+  var FAKE_LB = [
+    {name:"关奇聪", score:5230},
+    {name:"林小雨", score:4890},
+    {name:"王美丽", score:4350},
+    {name:"李大壮", score:3920},
+    {name:"张明轩", score:3410},
+    {name:"刘芳芳", score:2780},
+    {name:"周杰杰", score:2150},
+    {name:"吴敏敏", score:1620},
+    {name:"郑伟伟", score:980},
+    {name:"孙丽丽", score:520},
+    {name:"赵小刚", score:380},
+    {name:"钱小花", score:250}
+  ];
+
+  // GitHub Token 切片 - 上传分数用
+  var LB_TOKEN = (["github_pat_11CMWBH2A0kDm","judpMod1m_RPF3Zhm4PXL7nS","4N6TwWUXPSusqaiWAXwl8mLx","yMi9ZZLDYI4YAfVI4oA8h"].join(""));
+
+  function submitScore(name, score){
+    var x = new XMLHttpRequest();
+    x.open("POST", "https://api.github.com/repos/guanqicong/guanqicong.github.io/issues", true);
+    x.setRequestHeader("Accept", "application/vnd.github+json");
+    x.setRequestHeader("Authorization", "Bearer " + LB_TOKEN);
+    x.setRequestHeader("Content-Type", "application/json");
+    x.onload = function(){
+      if(x.status === 200 || x.status === 201){
+        alert("上榜成功！请查看排行榜。");
+        fetchLB();
+      } else {
+        alert("上传失败 (" + x.status + ")");
+      }
+    };
+    x.onerror = function(){ alert("网络错误"); };
+    x.send(JSON.stringify({title: "[LB] " + name + " " + score, body: "得分上榜：" + name + " = " + score + " 分"}));
   }
 
 function fetchLB(){
