@@ -1004,45 +1004,6 @@ function fetchLB(){
       xhr.send();
     } catch(e){}
   }
-function render(data){
-      data.sort(function(a,b){ return b.score - a.score; });
-      var top = data.slice(0,10);
-      var html = "";
-      for(var k=0;k<top.length;k++){
-        var row = top[k];
-        var medal = k===0?"&#x1F947;":k===1?"&#x1F948;":k===2?"&#x1F949;":("<b style=" + String.fromCharCode(34) + "color:#fff;" + String.fromCharCode(34) + ">"+(k+1)+"</b>");
-        var rowColor = k===0?"#FFD700":k===1?"#C0C0C0":k===2?"#CD7F32":"rgba(255,255,255,.9)";
-        var bg = k%2===0?"rgba(255,255,255,.06)":"rgba(0,0,0,.15)";
-        html += '<div style="display:flex;align-items:center;padding:.5vh 1.5vw;border-radius:4px;margin-bottom:.25vh;background:'+bg+';line-height:1.3;">'
-          + '<div style="width:7vw;text-align:center;font-size:3vw;">'+medal+'</div>'
-          + '<div style="flex:1;color:'+rowColor+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 1vw;">'+maskName(row.name)+'</div>'
-          + '<div style="width:13vw;text-align:right;color:'+rowColor+';font-weight:bold;">'+row.score+' 分</div>'
-        + '</div>';
-      }
-      list.innerHTML = html;
-    }
-    // 先用假数据打底
-    render(FAKE_LB.slice());
-    // 再异步从 GitHub 拉真实数据
-    try {
-      var x = new XMLHttpRequest();
-      x.open("GET", "https://api.github.com/repos/guanqicong/guanqicong.github.io/issues?state=open&per_page=100", true);
-      x.setRequestHeader("Accept", "application/vnd.github+json");
-      x.onload = function(){
-        if(x.status !== 200) return;
-        try {
-          var issues = JSON.parse(x.responseText);
-          for(var i=0;i<issues.length;i++){
-            var m = issues[i].title.match(/\[LB\]\s*(.+?)\s+(-?\d+)/);
-            if(m) real.push({name:m[1], score:parseInt(m[2])});
-          }
-        } catch(e){}
-        if(real.length > 0) render(real);
-      };
-      x.onerror = function(){};
-      x.send();
-    } catch(e){}
-  }
 
 function showLeaderboardModal(){
     var stageEl = document.getElementById("stage");
