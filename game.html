@@ -204,7 +204,7 @@ const LOGIC_W = 720, LOGIC_H = 1280;
   const FRAME_COUNT = 76;
   const CELL_W = 100, CELL_H = 178;
 
-  const CHAR_W = 200, CHAR_H = Math.round(CHAR_W * CELL_H / CELL_W);
+  const CHAR_W = 100, CHAR_H = Math.round(CHAR_W * CELL_H / CELL_W);
   const GROUND_Y = LOGIC_H - 110;
 
   let char = null;
@@ -279,6 +279,16 @@ const LOGIC_W = 720, LOGIC_H = 1280;
     bindEvents();
     // BGM 自动播放已在脚本开头处理（立即尝试 + 微信 JSBridge + 首次手势兜底）
     tryAutoBgm();
+// 预加载所有视频（避免切换场景时卡住）
+["vStart","vSelect","vMap","vThanks"].forEach(function(id){
+  var v = document.getElementById(id);
+  if(v && v.src){
+    v.preload = "auto";
+    v.muted = true; v.volume = 0; v.loop = true;
+    v.play().catch(function(){});
+  }
+});
+
   }
 
   function show(name){
@@ -298,17 +308,7 @@ const LOGIC_W = 720, LOGIC_H = 1280;
       } catch(e){}
     }
     if(name==="thanks") ensureVideo("vThanks", ASSETS.thanksV);
-    // 延迟重试一次（覆盖视频数据未就绪导致的播放失败，微信内常见）
-    var vidId = vidFor(name);
-    if(vidId){
-      setTimeout(function(){
-        var v = document.getElementById(vidId);
-        if(v && v.paused){
-          var pv = v.play();
-          if (pv && pv.catch) pv.catch(function(){});
-        }
-      }, 800);
-    }
+    // 延迟重试已移除，视频预加载保证立即可播
     // BGM：单一通用 BGM 贯穿全场，不随场景切换
     if(name==="game"){ 
       playBgm();
