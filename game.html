@@ -32,70 +32,7 @@
   @keyframes spin { to { transform:rotate(360deg); } }
 
   /* 游戏规则按钮 - 左上角 */
-  #helpBtn {
-    position: fixed;
-    top: 12px;
-    left: 12px;
-    z-index: 300;
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    background: rgba(139, 0, 0, 0.82);
-    color: #FFD700;
-    border: 3px solid #FFD700;
-    font-size: 13px;
-    font-weight: bold;
-    line-height: 1.3;
-    cursor: pointer;
-    text-align: center;
-    padding: 0;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.5);
-    letter-spacing: 0;
-    font-family: sans-serif;
-    display: none;
-  }
-  #helpBtn.visible { display: block; }
   /* 规则弹窗 */
-  #helpModal {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.85);
-    z-index: 500;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-  }
-  #helpModal.show { display: flex; }
-  .help-card {
-    background: linear-gradient(160deg, #8b0000 0%, #cc0000 50%, #8b0000 100%);
-    border: 4px solid #FFD700;
-    border-radius: 20px;
-    width: 88vw;
-    max-width: 640px;
-    padding: 28px 24px 24px;
-    box-shadow: 0 8px 40px rgba(0,0,0,0.6);
-    font-family: sans-serif;
-    color: #fff;
-    max-height: 88vh;
-    overflow-y: auto;
-    position: relative;
-  }
-  .help-title {
-    text-align: center;
-    font-size: 36px;
-    font-weight: bold;
-    color: #FFD700;
-    margin-bottom: 20px;
-    text-shadow: 0 2px 6px rgba(0,0,0,0.5);
-  }
-  .rule-row {
-    display: flex;
-    align-items: center;
-    margin-bottom: 14px;
-    font-size: 24px;
-    line-height: 1.5;
-  }
   .rule-icon {
     width: 56px;
     height: 56px;
@@ -108,7 +45,6 @@
     flex-shrink: 0;
     border: 3px solid #FFD700;
   }
-  .rule-text { flex: 1; }
   .rule-red { background: #cc2222; }
   .rule-yellow { background: #e6c200; color: #333; }
   .rule-ring { background: linear-gradient(135deg, #FFD700, #FFA500); }
@@ -119,30 +55,13 @@
     white-space: nowrap;
     margin-left: 8px;
   }
-  .rule-score.pos { color: #7FFF7F; }
-  .rule-score.neg { color: #FF6B6B; }
-  .rule-score.ring { color: #FFD700; }
-  .rule-note {
-    text-align: center;
-    font-size: 20px;
-    color: rgba(255,255,255,0.7);
-    margin-top: 16px;
-    line-height: 1.6;
+
+  #startGameBtn {
+    position: absolute;
+    left: 28%; top: 82%; width: 44%; height: 12%;
+    background: transparent; border: none; cursor: pointer; z-index: 10;
   }
-  .help-close {
-    display: block;
-    width: 100%;
-    margin-top: 20px;
-    padding: 14px;
-    background: #FFD700;
-    color: #8b0000;
-    border: none;
-    border-radius: 12px;
-    font-size: 26px;
-    font-weight: bold;
-    cursor: pointer;
-    text-align: center;
-  }
+
 </style>
 <script>
 /* BGM 自动播放引擎（最早执行）：打开链接即尝试播放，微信 JSBridge 就绪立即播放 */
@@ -234,7 +153,14 @@
   <!-- 选角色 -->
   <div id="select" class="screen">
     <video id="vSelect" loop muted playsinline webkit-playsinline x5-playsinline x5-video-player-type="h5" x5-video-player-fullscreen="false" poster="assets/poster_select.jpg?t=1788781981"></video>
-    <button id="groomBtn"></button>
+    
+  <!-- 游戏规则视频 -->
+  <div id="rules" class="screen">
+    <video id="vRules" muted playsinline webkit-playsinline x5-playsinline x5-video-player-type="h5" x5-video-player-fullscreen="false" src="assets/rules.mp4?t=1788781981"></video>
+    <button id="startGameBtn" onclick="onStartGame()"></button>
+  </div>
+
+<button id="groomBtn"></button>
     <button id="brideBtn"></button>
   </div>
 
@@ -272,6 +198,7 @@ const LOGIC_W = 720, LOGIC_H = 1280;
 
   const ASSETS = {
     startV: "assets/start_v2.mp4?t=1788781981",
+    rulesV: "assets/rules.mp4?t=1788781981",
     selectV:"assets/select_v2.mp4?t=1788781981",
     mapV:   "assets/map_v2.mp4?t=1788781981",
     thanksV:"assets/thanks_v2.mp4?t=1788781981",
@@ -387,23 +314,35 @@ const LOGIC_W = 720, LOGIC_H = 1280;
   }
 
   function finishLoading(){
-  document.getElementById("helpBtn").classList.add("visible");
-    const l = document.getElementById("loading");
+    clearTimeout(window._flTimer);
+    window._flTimer = setTimeout(function(){
+      var l = document.getElementById("loading");
+      if(l && l.style.display !== "none"){
+        l.style.display = "none";
+        show("start");
+        bindEvents();
+        tryAutoBgm();
+      }
+    }, 8000);
+    var l = document.getElementById("loading");
     if(l) l.style.display = "none";
     show("start");
     bindEvents();
-    // BGM 自动播放已在脚本开头处理（立即尝试 + 微信 JSBridge + 首次手势兜底）
     tryAutoBgm();
   }
+
 
   function show(name){
     document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
     document.getElementById(name).classList.add("active");
     // 关闭所有视频
-    ["vStart","vSelect","vMap","vThanks"].forEach(id=>{ pauseVid(id); });
+    ["vStart","vSelect","vRules","vMap","vThanks"].forEach(id=>{ pauseVid(id); });
     // 仅播放当前屏视频
     if(name==="start")  ensureVideo("vStart",  ASSETS.startV);
     if(name==="select") ensureVideo("vSelect", ASSETS.selectV);
+    if(name==="rules"){
+      ensureVideo("vRules", ASSETS.rulesV);
+    }
     if(name==="map"){
       ensureVideo("vMap", ASSETS.mapV);
       // 预加载感谢页视频：玩家看地图页时提前下载，点"参加"后立即播放
@@ -435,7 +374,7 @@ const LOGIC_W = 720, LOGIC_H = 1280;
   }
 
   function vidFor(name){
-    return {"start":"vStart","select":"vSelect","map":"vMap","thanks":"vThanks"}[name] || null;
+    return {"start":"vStart","select":"vSelect","rules":"vRules","map":"vMap","thanks":"vThanks"}[name] || null;
   }
 
   function ensureVideo(id, src){
@@ -465,7 +404,7 @@ const LOGIC_W = 720, LOGIC_H = 1280;
 
   // 全局手势/微信桥解锁：任何触摸或点击都尝试把已设 src 的视频播起来（微信需手势后才放行视频）
   function unlockVideos(){
-    ["vStart","vSelect","vMap","vThanks"].forEach(function(id){
+    ["vStart","vSelect","vRules","vMap","vThanks"].forEach(function(id){
       const v=document.getElementById(id);
       if(v && v.src && v.paused){
         var pv = v.play();
@@ -499,12 +438,12 @@ const LOGIC_W = 720, LOGIC_H = 1280;
     const groomBtn = document.getElementById("groomBtn");
     groomBtn.style.left = "3%"; groomBtn.style.width = "40%";
     groomBtn.style.top = "81%"; groomBtn.style.height = "13%";
-    groomBtn.addEventListener("click", ()=>{ char={sheet:RES.groom}; playBtnSound(); show("game"); });
+    groomBtn.addEventListener("click", ()=>{ char={sheet:RES.groom}; playBtnSound(); show("rules"); });
 
     const brideBtn = document.getElementById("brideBtn");
     brideBtn.style.left = "50%"; brideBtn.style.width = "40%";
     brideBtn.style.top = "81%"; brideBtn.style.height = "13%";
-    brideBtn.addEventListener("click", ()=>{ char={sheet:RES.bride}; playBtnSound(); show("game"); });
+    brideBtn.addEventListener("click", ()=>{ char={sheet:RES.bride}; playBtnSound(); show("rules"); });
 
     // 地图热点（新素材：x=18% y=53% w=62% h=20%，略扩大提升命中率）
     const mapArea = document.getElementById("mapArea");
@@ -540,46 +479,11 @@ const LOGIC_W = 720, LOGIC_H = 1280;
 
   }
 
-  function showHelp(){
-    var modal = document.getElementById("helpModal");
-    if(!modal){
-      modal = document.createElement("div");
-      modal.id = "helpModal";
-      modal.innerHTML = [
-        '<div class="help-card">',
-        '<div class="help-title">&#x1F3C6; 游戏规则</div>',
-        '<div class="rule-row">',
-          '<div class="rule-icon rule-red">&#x2764;&#xFE0F;</div>',
-          '<div class="rule-text">接住<span style="color:#FFD700;font-weight:bold">红心</span></div>',
-          '<div class="rule-score pos">+10</div>',
-        '</div>',
-        '<div class="rule-row">',
-          '<div class="rule-icon rule-yellow">&#x1F49B;</div>',
-          '<div class="rule-text">接住<span style="color:#FFD700;font-weight:bold">黄心</span>要躲开！</div>',
-          '<div class="rule-score neg">-20</div>',
-        '</div>',
-        '<div class="rule-row">',
-          '<div class="rule-icon rule-ring">&#x1F48D;</div>',
-          '<div class="rule-text">接到<span style="color:#FFD700;font-weight:bold">戒指</span>（稀有）</div>',
-          '<div class="rule-score ring">+50</div>',
-        '</div>',
-        '<div class="rule-row">',
-          '<div class="rule-icon rule-letter">&#x2709;&#xFE0F;</div>',
-          '<div class="rule-text">收到<span style="color:#FFD700;font-weight:bold">请帖</span>（不玩游戏也送祝福）</div>',
-          '<div class="rule-score" style="color:#90EE90;font-size:22px;">送祝福！</div>',
-        '</div>',
-        '<div class="rule-row">',
-          '<div class="rule-icon" style="background:#555;color:#fff;font-size:18px;">&#x2193;</div>',
-          '<div class="rule-text">分数变成<span style="color:#FF6B6B;font-weight:bold">负数</span></div>',
-          '<div class="rule-score" style="color:#90EE90;font-size:22px;">送祝福！</div>',
-        '</div>',
-        '<div class="rule-note">&#x1F389; 接到红心/戒指得分<br>&#x26A0;&#xFE0F; 躲开黄心和请帖！</div>',
-        '<button class="help-close" onclick="document.getElementById(\x27helpModal\x27).classList.remove(\x27show\x27)">知道了！</button>',
-        '</div>'
-      ].join('');
-      document.body.appendChild(modal);
-    }
-    modal.classList.add("show");
+  
+
+function onStartGame(){
+    playBtnSound();
+    show("game");
   }
 
 function onDown(e){
@@ -627,29 +531,17 @@ function onDown(e){
   }
 
   function startGame(){
-    const canvas = document.getElementById("gameCanvas");
-    game.canvas = canvas;
-    game.ctx = canvas.getContext("2d");
-    resizeCanvas();
-    game.running = true;
-    game.hearts = [];
-    game.score = 0;
-    game.isNeg = false;
-    game.spawnTimer = 0.3;
-    game.charX = LOGIC_W / 2;
-    game.charDir = 1;
-    game.moving = false;
-    game.bob = 0;
-    game.frameIdx = 0;
-    game.frameTimer = 0;
-    game.lastT = performance.now();
-    // 预加载地图页视频：接爱心游戏进行中提前下载，切地图页后立即播放（避免微信内卡顿等待）
-    try {
-      const vm = document.getElementById("vMap");
-      if(vm && !vm.src){ vm.muted = true; vm.volume = 0; vm.loop = true; vm.preload = "auto"; vm.src = ASSETS.mapV; }
-    } catch(e){}
-    if(!game._raf) loop(game.lastT);
+    game.startTime = Date.now();
+    game.letterStorm = false;
+    clearInterval(game._stormTimer);
+    game._stormTimer = setInterval(function(){
+      if(!game.running){ clearInterval(game._stormTimer); return; }
+      var elapsed = (Date.now() - game.startTime) / 1000;
+      var phase = elapsed % 10;
+      game.letterStorm = (phase < 2);
+    }, 200);
   }
+
 
   function resizeCanvas(){
     const canvas = game.canvas, ctx = game.ctx;
@@ -754,35 +646,46 @@ function onDown(e){
   }
 
   function spawnHeart(){
-    // 概率：红心 40%，黄心 40%，戒指 8%，请帖 12%
-    var rand = Math.random();
-    var type;
-    if(rand < 0.40){ type = 'red'; }
-    else if(rand < 0.80){ type = 'yellow'; }
-    else if(rand < 0.88){ type = 'ring'; }
-    else { type = 'letter'; }
+    if(!game.running) return;
+    var elapsed = (Date.now() - game.startTime) / 1000;
+    var phase = elapsed % 10;
+    var inStorm = (phase < 2) && game.running;
 
-    var r, imgSrc;
-    if(type === 'ring'){
-      r = 40;
-    } else if(type === 'letter'){
-      r = 65;
+    // 请帖风暴：每10秒一次，持续2秒，大量请帖
+    if(inStorm){
+      if(Math.random() < 0.28){
+        game.items.push({
+          type:"letter",
+          x: Math.random() * (LOGIC_W - 60),
+          y: -30,
+          w: 50, h: 28,
+          vy: 3.5 + Math.random() * 2
+        });
+      }
     } else {
-      r = type === 'red' ? (56 + Math.random() * 10) : (50 + Math.random() * 10);
+      // 正常：letter 3% 概率
+      if(Math.random() < 0.03){
+        game.items.push({
+          type:"letter",
+          x: Math.random() * (LOGIC_W - 60),
+          y: -30,
+          w: 50, h: 28,
+          vy: 2.0 + Math.random() * 1.5
+        });
+      }
     }
-    game.hearts.push({
-      x: 60 + Math.random() * (LOGIC_W - 120),
-      y: -r - 10,
-      vy: 240 + Math.random() * 160,
-      r: r,
-      hw: (type==='letter' ? 65 : type==='ring' ? 40 : r),
-      hh: (type==='letter' ? 37 : type==='ring' ? 22 : r),
-      type: type,
-      rot: (Math.random() * 2 - 1) * 0.3,
-      vr: (Math.random() * 2 - 1) * 0.6,
-      caught: false
-    });
+
+    // 红心 / 黄心 / 戒指
+    var r = Math.random();
+    if(r < 0.35){
+      game.items.push({type:"heartRed", x:Math.random()*(LOGIC_W-50), y:-40, w:50, h:50, vy:2.2+Math.random()*1.2});
+    } else if(r < 0.60){
+      game.items.push({type:"heartYellow", x:Math.random()*(LOGIC_W-50), y:-40, w:50, h:50, vy:2.5+Math.random()*1.0});
+    } else if(r < 0.65){
+      game.items.push({type:"ring", x:Math.random()*(LOGIC_W-40), y:-30, w:40, h:23, vy:1.8+Math.random()});
+    }
   }
+
 
   function render(){
     const ctx = game.ctx;
