@@ -904,12 +904,6 @@ const LOGIC_W = 720, LOGIC_H = 1280;
     });
     subRow.appendChild(rpBtn);
     subRow.appendChild(lbBtn);
-    var goLeaderBtn = document.createElement("button");
-    goLeaderBtn.id = "goLeaderBtn";
-    goLeaderBtn.style.cssText = "width:100%;padding:16px;font-size:30px;background:rgba(255,255,255,.12);color:#FFD700;border:2px solid #FFD700;border-radius:12px;font-weight:bold;margin-top:12px;";
-    goLeaderBtn.innerHTML = "&#x1F3C6; 查看排行榜";
-    goLeaderBtn.addEventListener("click", function(){ showLeaderboardModal(); });
-    btnArea.appendChild(goLeaderBtn);
     btnArea.appendChild(subRow);
 
     card.appendChild(btnArea);
