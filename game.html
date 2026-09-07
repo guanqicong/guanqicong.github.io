@@ -740,12 +740,12 @@
     layer.id = "lbInputLayer";
     layer.style.cssText = "position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:100;display:flex;align-items:center;justify-content:center;flex-direction:column;";
     layer.innerHTML = ''
-      + '<div style="background:linear-gradient(135deg,#c8001e,#8b0000);border:3px solid #FFD700;border-radius:20px;padding:6vw 4vw;width:82%;text-align:center;color:#fff;">'
-      +   '<div style="font-size:8vw;color:#FFD700;margin-bottom:2vw;">' + title + '</div>'
-      +   '<div style="font-size:4.5vw;color:rgba(255,255,255,.8);margin-bottom:2vw;">' + sub + '</div>'
-      +   '<div style="font-size:14vw;color:' + scoreColor + ';font-weight:bold;margin:2vw 0 4vw;text-shadow:0 0 20px ' + scoreColor + ';">' + game.score + ' 分</div>'
-      +   '<button id="goReplayBtn" style="display:block;width:90%;margin:0 auto 2vw;padding:3vw;font-size:5.5vw;background:#FFD700;color:#8b0000;border:none;border-radius:10px;font-weight:bold;">再玩一次</button>'
-      +   '<button id="goRankBtn" style="display:block;width:90%;margin:0 auto;padding:3vw;font-size:5vw;background:transparent;color:#FFD700;border:2px solid #FFD700;border-radius:10px;">查看排行榜</button>'
+      + '<div style="background:linear-gradient(135deg,#c8001e,#8b0000);border:3px solid #FFD700;border-radius:20px;padding:3vw 3vw;width:85%;text-align:center;color:#fff;">'
+      +   '<div style="font-size:5vw;color:#FFD700;margin-bottom:1vw;">' + title + '</div>'
+      +   '<div style="font-size:3.2vw;color:rgba(255,255,255,.8);margin-bottom:1vw;">' + sub + '</div>'
+      +   '<div style="font-size:9vw;color:' + scoreColor + ';font-weight:bold;margin:1vw 0 2vw;text-shadow:0 0 20px ' + scoreColor + ';">' + game.score + ' 分</div>'
+      +   '<button id="goReplayBtn" style="display:block;width:90%;margin:0 auto 2vw;padding:3vw;font-size:4vw;background:#FFD700;color:#8b0000;border:none;border-radius:8px;font-weight:bold;">再玩一次</button>'
+      +   '<button id="goRankBtn" style="display:block;width:90%;margin:0 auto;padding:3vw;font-size:3.5vw;background:transparent;color:#FFD700;border:2px solid #FFD700;border-radius:8px;">查看排行榜</button>'
       + '</div>';
     stage.appendChild(layer);
     document.getElementById("goReplayBtn").addEventListener("click", function(){
@@ -780,8 +780,8 @@
       +   '<div style="font-size:5vw;margin-bottom:1vw;color:rgba(255,255,255,.8);">&#x4F60;&#x7684;&#x5F97;&#x5206;</div>'
       +   '<div id="lbScoreShow" style="font-size:22vw;color:#FFD700;font-weight:bold;line-height:1;margin:1vw 0 4vw;text-shadow:0 0 25px #FFB347;">0</div>'
       +   '<div style="font-size:4.8vw;color:#FFE680;line-height:1.6;margin-bottom:4vw;">&#x8BF7;&#x8054;&#x7CFB;&#x65B0;&#x90CE;&#x65B0;&#x5A18;&#x5A18;<br>&#x544A;&#x8BC9;&#x4ED6;&#x4EEC;&#x4F60;&#x7684;&#x5F97;&#x5206;&#xFF0C;&#x5E2E;&#x4F60;&#x4E0A;&#x699C;&#xFF01;</div>'
-      +   '<button id="lbRankBtn" style="display:block;width:90%;margin:0 auto 2vw;padding:3.5vw;font-size:5.5vw;background:#FFD700;color:#8b0000;border:none;border-radius:10px;font-weight:bold;">&#x1F3C6; &#x67E5;&#x770B;&#x6392;&#x884C;&#x699C;</button>'
-      +   '<button id="lbReplayBtn" style="display:block;width:90%;margin:0 auto;padding:3vw;font-size:5vw;background:transparent;color:#FFD700;border:2px solid #FFD700;border-radius:10px;">&#x1F501; &#x518D;&#x73A9;&#x4E00;&#x6B21;</button>'
+      +   '<button id="lbRankBtn" style="display:block;width:90%;margin:0 auto 2vw;padding:3.5vw;font-size:4vw;background:#FFD700;color:#8b0000;border:none;border-radius:8px;font-weight:bold;">&#x1F3C6; &#x67E5;&#x770B;&#x6392;&#x884C;&#x699C;</button>'
+      +   '<button id="lbReplayBtn" style="display:block;width:90%;margin:0 auto;padding:3vw;font-size:3.5vw;background:transparent;color:#FFD700;border:2px solid #FFD700;border-radius:8px;">&#x1F501; &#x518D;&#x73A9;&#x4E00;&#x6B21;</button>'
       + '</div>';
     stage.appendChild(layer);
     document.getElementById("lbScoreShow").textContent = game.score;
@@ -890,4 +890,5 @@
 </script>
 </body>
 </html>
+
 
