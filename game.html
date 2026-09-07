@@ -164,8 +164,8 @@ const LOGIC_W = 720, LOGIC_H = 1280;
     bg:     "assets/img_0.jpg?t=1788781981",
     heartRed:   "assets/img_1.webp?t=1788781981",
     heartYellow:"assets/img_2.webp?t=1788781981",
-    brideSheet: "https://cdn.jsdelivr.net/gh/guanqicong/guanqicong.github.io@7b297a8d962f/assets/img_3.webp?1788785349",
-    groomSheet: "https://cdn.jsdelivr.net/gh/guanqicong/guanqicong.github.io@93aaeb89722e/assets/img_4.webp?1788785349",
+    brideSheet: "assets/img_3.webp",
+    groomSheet: "assets/img_4.webp",
     ring:      "assets/ring.png?t=1788781981",
     letter:    "assets/letter.png?t=1788781981",
     bgm:     "assets/bgm_v2.mp3?t=1788781981",
@@ -232,7 +232,7 @@ const LOGIC_W = 720, LOGIC_H = 1280;
   const TOTAL_IMG = 7;
 
   function init(){
-    // 微信 X5 内核兼容：统一设置视频属性，避免被强制全屏/层级异常
+    // 微信 X5 内核兼容
     document.querySelectorAll("video").forEach(v=>{
       v.setAttribute("x5-playsinline","");
       v.setAttribute("x5-video-player-type","h5");
@@ -242,34 +242,34 @@ const LOGIC_W = 720, LOGIC_H = 1280;
       v.muted = true;
     });
 
-    // 视频改为懒加载：进哪屏才设 src，避免一次性占满带宽
-    const imgList = [
-      ["bride",  loadImage(ASSETS.brideSheet)],
-      ["groom",  loadImage(ASSETS.groomSheet)],
-      ["hr",     loadImage(ASSETS.heartRed)],
-      ["hy",     loadImage(ASSETS.heartYellow)],
-      ["ring",   loadImage(ASSETS.ring)],
-      ["letter", loadImage(ASSETS.letter)],
-      ["bg",     loadImage(ASSETS.bg)]
-    ];
-    // 预创建音效实例（提前下载，确保游戏内首次播放即有声音）
+    // 预创建音效实例
     try {
       btnAudio = new Audio(ASSETS.btnSound); btnAudio.volume = 0.8; btnAudio.preload = "auto";
       catchAudio = new Audio(ASSETS.catchSound); catchAudio.volume = 0.8; catchAudio.preload = "auto";
     } catch(e) {}
-    // Promise 链逐个处理（兼容不支持 async/await 的旧微信 X5 内核）
-    var seq = Promise.resolve();
-    imgList.forEach(function(item){
-      seq = seq.then(function(){
-        return item[1].then(function(img){
-          RES[item[0]] = img;
-          loadedCount++;
-          setTip("加载中 "+loadedCount+"/"+TOTAL_IMG);
-        });
-      });
+
+    // 并行加载所有图片（Promise.all 同时下载，大幅加速）
+    var promises = [
+      loadImage(ASSETS.brideSheet).then(function(img){ RES["bride"] = img; }),
+      loadImage(ASSETS.groomSheet).then(function(img){ RES["groom"] = img; }),
+      loadImage(ASSETS.heartRed).then(function(img){ RES["hr"] = img; }),
+      loadImage(ASSETS.heartYellow).then(function(img){ RES["hy"] = img; }),
+      loadImage(ASSETS.ring).then(function(img){ RES["ring"] = img; }),
+      loadImage(ASSETS.letter).then(function(img){ RES["letter"] = img; }),
+      loadImage(ASSETS.bg).then(function(img){ RES["bg"] = img; })
+    ];
+
+    // 实时更新进度（任意一个完成就 +1）
+    var done = 0;
+    promises.forEach(function(p){
+      p.then(function(){
+        done++;
+        loadedCount = done;
+        setTip("加载中 "+done+"/"+TOTAL_IMG);
+      }).catch(function(){});
     });
-    // 兜底：无论如何都进游戏（即使个别素材失败）
-    return seq.then(function(){ finishLoading(); });
+
+    return Promise.all(promises).catch(function(){}).then(function(){ finishLoading(); });
   }
 
   function finishLoading(){
@@ -1047,7 +1047,7 @@ function showLeaderboardModal(){
         var bg = k%2===0?"rgba(255,255,255,.05)":"rgba(0,0,0,.15)";
         html += '<div style="display:flex;align-items:center;padding:10px 16px;border-radius:8px;margin-bottom:6px;background:'+bg+';">'
           + '<div style="width:60px;text-align:center;font-size:32px;">'+medal+'</div>'
-          + '<div style="flex:1;color:'+rowColor+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 12px;">'+row.name+'</div>'
+          + '<div style="flex:1;color:'+rowColor+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 12px;">'+maskName(row.name)+'</div>'
           + '<div style="width:120px;text-align:right;color:'+rowColor+';font-weight:bold;">'+row.score+' 分</div>'
         + '</div>';
       }
