@@ -2,351 +2,532 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>婚礼大作战</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
 html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif}
-#stage{position:relative;width:100vw;height:100vh;max-width:56.25vh;max-height:177.78vw;margin:0 auto;overflow:hidden;background:#000}
+#stage{position:relative;width:100%;height:100%;max-width:100%;max-height:100%;margin:0 auto;overflow:hidden;background:#1a1a2e}
+
+/* 通用场景 */
 .screen{position:absolute;top:0;left:0;width:100%;height:100%;display:none;background-size:cover;background-position:center;background-repeat:no-repeat}
-.screen.active{display:block}
-#start{background-image:url(assets/start.jpg)}
-#select{background-image:url(assets/select.jpg)}
-#rules{background-image:url(assets/map.jpg)}
-#map{background-image:url(assets/map.jpg)}
-#thanks{background-image:url(assets/thanks.jpg)}
-#game{background:url(assets/game_bg.jpg) center/cover no-repeat #000}
-.btn{position:absolute;border:none;background:transparent;cursor:pointer;outline:none}
-.btn:active{transform:scale(.96)}
-#startBtn{left:25%;top:78%;width:50%;height:12%}
-#groomBtn{left:5%;top:75%;width:40%;height:14%}
-#brideBtn{left:55%;top:75%;width:40%;height:14%}
-#mapBtn{left:17%;top:50%;width:66%;height:22%;cursor:pointer}
-#joinBtn{left:32%;top:84%;width:36%;height:12%}
-#startGameBtn{left:18%;top:82%;width:64%;height:12%;background:linear-gradient(180deg,#FFD700,#FF8C00);border-radius:50px;color:#8b0000;font-size:20px;font-weight:bold;box-shadow:0 4px 15px rgba(255,140,0,.6);animation:pulse 1.5s infinite}
-@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
-#goReplay{left:18%;top:60%;width:64%;height:12%}
-#goMap{left:18%;top:74%;width:64%;height:12%}
-#goLeader{left:18%;top:88%;width:64%;height:10%;background:rgba(0,0,0,.4);color:#FFD700;border:1px solid #FFD700;border-radius:25px;font-size:16px}
-canvas{position:absolute;top:0;left:0;width:100%;height:100%;z-index:5;pointer-events:none}
-#char{position:absolute;bottom:8%;width:25%;height:auto;z-index:8;pointer-events:none;will-change:transform}
-#hud{position:absolute;top:10px;left:10px;right:10px;display:flex;justify-content:space-between;align-items:center;color:#fff;font-size:18px;font-weight:bold;text-shadow:0 2px 4px rgba(0,0,0,.7);z-index:10;pointer-events:none}
-#hud span{background:rgba(0,0,0,.4);padding:4px 12px;border-radius:15px}
-#modal{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:50;flex-direction:column;padding:5%;text-align:center;color:#fff}
-#modal.show{display:flex}
-#modal h1{font-size:28px;margin-bottom:8px;color:#FFD700}
-#modal p{font-size:14px;margin:4px 0;color:#ccc}
-#modal .score{font-size:50px;font-weight:bold;color:#FFD700;margin:15px 0;text-shadow:0 0 20px rgba(255,215,0,.5)}
-#modal input{width:80%;padding:10px;font-size:16px;border-radius:20px;border:2px solid #FFD700;background:rgba(255,255,255,.1);color:#fff;text-align:center;margin:8px 0;outline:none}
-#modal .btn-row{display:flex;flex-direction:column;gap:8px;width:80%;margin-top:10px}
-#modal .btn-row button{padding:10px;font-size:16px;border-radius:25px;border:none;font-weight:bold;cursor:pointer;transition:transform .1s}
-#modal .btn-row button:active{transform:scale(.95)}
-.btn-gold{background:linear-gradient(180deg,#FFD700,#FFA500);color:#8b0000}
-.btn-outline{background:rgba(255,255,255,.1);color:#FFD700;border:1px solid #FFD700!important}
-#loading{position:absolute;top:0;left:0;width:100%;height:100%;background:#000;display:flex;align-items:center;justify-content:center;color:#FFD700;font-size:18px;z-index:100}
-#lbBox{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.95);display:none;align-items:center;justify-content:center;z-index:60;flex-direction:column;padding:4%}
-#lbBox.show{display:flex}
-#lbBox h2{color:#FFD700;font-size:24px;margin-bottom:10px}
-#lbList{width:90%;max-height:60%;overflow-y:auto;background:rgba(255,215,0,.1);border:1px solid #FFD700;border-radius:10px;padding:8px;font-size:13px;color:#fff}
-#lbList .row{display:flex;justify-content:space-between;padding:6px 8px;border-bottom:1px solid rgba(255,255,255,.1)}
-#lbList .row.me{background:rgba(255,215,0,.2);border-radius:6px}
-#lbClose{margin-top:10px;padding:8px 30px;background:#FFD700;color:#8b0000;border:none;border-radius:20px;font-size:14px;font-weight:bold}
+.screen.active{display:block!important}
+
+/* 各场景背景图 */
+#s-start{background-image:url(assets/start.jpg)}
+#s-select{background-image:url(assets/select.jpg)}
+#s-rules{background-image:url(assets/map.jpg)}
+#s-map{background-image:url(assets/map.jpg)}
+#s-thanks{background-image:url(assets/thanks.jpg)}
+#s-game{background:url(assets/game_bg.jpg) center/cover no-repeat #000}
+
+/* 通用按钮 */
+.btn{position:absolute;cursor:pointer;outline:none;border:none}
+
+/* 各按钮位置 */
+#btn-start{left:25%;top:78%;width:50%;height:12%}
+#btn-groom{left:5%;top:76%;width:42%;height:13%}
+#btn-bride{left:53%;top:76%;width:42%;height:13%}
+#btn-map-area{left:17%;top:52%;width:66%;height:20%}
+#btn-join{left:32%;top:85%;width:36%;height:11%}
+#btn-rules-start{
+  left:16%;top:82%;width:68%;height:11%;
+  background:linear-gradient(135deg,#FFD700,#FF8C00);
+  border-radius:50px;
+  color:#8b0000;font-size:20px;font-weight:bold;
+  box-shadow:0 6px 20px rgba(255,140,0,.7);
+  animation:golden-pulse 1.8s ease-in-out infinite;
+  display:flex;align-items:center;justify-content:center;
+  text-shadow:0 1px 2px rgba(255,255,255,.3);
+  letter-spacing:2px;
+}
+@keyframes golden-pulse{
+  0%,100%{transform:scaleX(1) scaleY(1);box-shadow:0 6px 20px rgba(255,140,0,.7)}
+  50%{transform:scaleX(1.03) scaleY(1.05);box-shadow:0 8px 30px rgba(255,140,0,.9)}
+}
+
+/* 游戏层 */
+#layer-game{position:absolute;top:0;left:0;width:100%;height:100%}
+#game-canvas{position:absolute;top:0;left:0;width:100%;height:100%}
+#game-char{position:absolute;bottom:9%;width:22%;height:auto;left:50%;transform:translateX(-50%);pointer-events:none;z-index:8}
+#game-hud{position:absolute;top:12px;left:12px;right:12px;
+  display:flex;justify-content:space-between;align-items:center;
+  color:#fff;font-size:18px;font-weight:bold;
+  text-shadow:0 2px 6px rgba(0,0,0,.8);z-index:10;pointer-events:none}
+#game-hud span{background:rgba(0,0,0,.5);padding:5px 14px;border-radius:20px}
+
+/* 规则页卡片 */
+#rules-card{
+  position:absolute;top:4%;left:4%;right:4%;
+  background:rgba(0,0,0,.6);
+  border:2px solid #FFD700;border-radius:20px;
+  padding:20px 16px;color:#fff;text-align:center;
+  box-shadow:0 8px 32px rgba(0,0,0,.6);
+}
+#rules-card h2{color:#FFD700;font-size:22px;margin-bottom:14px;text-shadow:0 2px 6px rgba(0,0,0,.9)}
+.rule-row{font-size:15px;line-height:2.2;text-align:left;padding:0 10%;text-shadow:0 1px 3px rgba(0,0,0,.8)}
+.rule-row b{font-weight:bold}
+
+/* 结果弹层 */
+#result-layer{
+  position:absolute;top:0;left:0;width:100%;height:100%;
+  background:rgba(0,0,0,.88);
+  display:none;align-items:center;justify-content:center;
+  flex-direction:column;z-index:50;padding:5%;
+}
+#result-layer.show{display:flex!important}
+#result-layer h1{color:#FFD700;font-size:28px;margin-bottom:6px}
+#result-layer p{color:#ccc;font-size:14px;margin:3px 0}
+#result-score{font-size:52px;font-weight:bold;color:#FFD700;margin:14px 0;
+  text-shadow:0 0 20px rgba(255,215,0,.6)}
+#result-name{width:78%;padding:10px;font-size:16px;border-radius:22px;
+  border:2px solid #FFD700;background:rgba(255,255,255,.08);
+  color:#fff;text-align:center;outline:none;margin-top:6px}
+.result-btns{display:flex;flex-direction:column;gap:8px;width:78%;margin-top:10px}
+.result-btns button{padding:11px;font-size:15px;border-radius:25px;
+  border:none;font-weight:bold;cursor:pointer;transition:transform .1s}
+.result-btns button:active{transform:scale(.95)}
+.btn-primary{background:linear-gradient(135deg,#FFD700,#FF8C00);color:#8b0000}
+.btn-ghost{background:rgba(255,255,255,.1);color:#FFD700;border:1px solid #FFD700!important}
+
+/* 排行榜 */
+#lb-layer{
+  position:absolute;top:0;left:0;width:100%;height:100%;
+  background:rgba(0,0,0,.94);
+  display:none;align-items:center;justify-content:center;
+  flex-direction:column;z-index:60;padding:4%;
+}
+#lb-layer.show{display:flex!important}
+#lb-layer h2{color:#FFD700;font-size:22px;margin-bottom:12px}
+#lb-rows{width:90%;max-height:58%;overflow-y:auto;
+  background:rgba(255,215,0,.08);border:1px solid #FFD700;
+  border-radius:12px;padding:10px;font-size:13px;color:#fff}
+.lb-row{display:flex;justify-content:space-between;padding:7px 10px;
+  border-bottom:1px solid rgba(255,255,255,.08)}
+.lb-row:last-child{border-bottom:none}
+#lb-close{margin-top:12px;padding:9px 36px;background:#FFD700;
+  color:#8b0000;border:none;border-radius:22px;font-size:14px;font-weight:bold}
+
+/* Loading */
+#loading-screen{
+  position:absolute;top:0;left:0;width:100%;height:100%;
+  background:#0a0a1a;display:flex;align-items:center;justify-content:center;
+  flex-direction:column;color:#FFD700;font-size:18px;z-index:100;
+}
+#loading-screen.hidden{display:none!important}
+.load-dot{animation:blink 1s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 </style>
 </head>
 <body>
 <div id="stage">
-  <div id="loading">载入中...</div>
-  <div id="start" class="screen active"><button class="btn" id="startBtn"></button></div>
-  <div id="select" class="screen"><button class="btn" id="groomBtn"></button><button class="btn" id="brideBtn"></button></div>
-  <div id="rules" class="screen">
-    <div style="position:absolute;top:5%;left:5%;right:5%;background:rgba(0,0,0,.55);border:2px solid #FFD700;border-radius:20px;padding:6% 4%;color:#fff;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,.5)">
-      <h2 style="color:#FFD700;font-size:24px;margin-bottom:18px;text-shadow:0 2px 8px rgba(0,0,0,.8)">💝 接住漫天祝福</h2>
-      <p style="font-size:16px;line-height:2.1;text-align:left;padding:0 6%;text-shadow:0 1px 4px rgba(0,0,0,.8)">
-        ❤️ 红心：<b style="color:#FF6B6B">+10分</b><br>
-        💛 黄心：<b style="color:#FFD700">-20分</b><br>
-        💍 戒指：<b style="color:#FFC0CB">+50分</b><br>
-        ✉️ 请帖：<b style="color:#90EE90">送祝福不扣分</b>
-      </p>
-      <p style="margin-top:16px;font-size:14px;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.8)">⏱ 30秒倒计时，分数越高越好！</p>
+
+  <!-- Loading -->
+  <div id="loading-screen">
+    <div>载入中<span class="load-dot">...</span></div>
+  </div>
+
+  <!-- 场景：标题 -->
+  <div id="s-start" class="screen active">
+    <div id="btn-start" class="btn"></div>
+  </div>
+
+  <!-- 场景：选角色 -->
+  <div id="s-select" class="screen">
+    <div id="btn-groom" class="btn"></div>
+    <div id="btn-bride" class="btn"></div>
+  </div>
+
+  <!-- 场景：规则 -->
+  <div id="s-rules" class="screen">
+    <div id="rules-card">
+      <h2>&#x1F49D; 接住漫天祝福</h2>
+      <div class="rule-row">
+        <b style="color:#FF6B6B">&#x2764;</b> 红心：<b>+10分</b><br>
+        <b style="color:#FFD700">&#x1F49B;</b> 黄心：<b>-20分</b><br>
+        <b style="color:#FFC0CB">&#x1F48D;</b> 戒指：<b>+50分</b><br>
+        <b style="color:#90EE90">&#x2709;</b> 请帖：<b>送祝福不扣分</b>
+      </div>
+      <p style="margin-top:14px;font-size:13px;color:#ddd">&#x23F1; 30秒倒计时，分数越高越好！</p>
     </div>
-    <button class="btn" id="startGameBtn">▶ 开始接爱心</button>
+    <div id="btn-rules-start" class="btn">&#x25B6; 开始接爱心</div>
   </div>
-  <div id="game" class="screen">
-    <div id="hud"><span id="score">0分</span><span id="time">30秒</span></div>
-    <img id="char" src="assets/groom.webp">
-    <canvas id="cv"></canvas>
-  </div>
-  <div id="map" class="screen">
-    <button class="btn" id="mapBtn"></button>
-    <button class="btn" id="joinBtn"></button>
-  </div>
-  <div id="thanks" class="screen"></div>
-  <div id="modal">
-    <h1>祝福送到！</h1>
-    <p>感谢参与关奇聪 ♥ 刘斯婷 的婚礼</p>
-    <p>2026年11月14日 · 广州南沙星河吉酒店</p>
-    <div class="score" id="finalScore">0</div>
-    <p>输入名字上传到排行榜：</p>
-    <input id="nameInput" placeholder="你的名字" maxlength="8">
-    <div class="btn-row">
-      <button class="btn-gold" id="uploadBtn">🏆 上传分数</button>
-      <button class="btn-outline" id="goReplay">🔄 再玩一次</button>
-      <button class="btn-outline" id="goMap">📍 查看地图</button>
-      <button class="btn-outline" id="goLeader">📊 查看排行榜</button>
+
+  <!-- 场景：游戏 -->
+  <div id="s-game" class="screen">
+    <div id="layer-game">
+      <div id="game-hud"><span id="hud-score">0分</span><span id="hud-time">30秒</span></div>
+      <img id="game-char" src="assets/groom.webp" alt="">
+      <canvas id="game-canvas"></canvas>
     </div>
   </div>
-  <div id="lbBox">
-    <h2>🏆 排行榜</h2>
-    <div id="lbList"></div>
-    <button id="lbClose">关闭</button>
+
+  <!-- 场景：地图 -->
+  <div id="s-map" class="screen">
+    <div id="btn-map-area" class="btn"></div>
+    <div id="btn-join" class="btn"></div>
   </div>
+
+  <!-- 场景：感谢 -->
+  <div id="s-thanks" class="screen"></div>
+
+  <!-- 结果弹层 -->
+  <div id="result-layer">
+    <h1>&#x1F49D; 祝福送到！</h1>
+    <p>感谢参与关奇聪 &#x2661; 刘斯婷 的婚礼</p>
+    <p>2026年11月14日 &#xB7; 广州南沙星河吉酒店</p>
+    <div id="result-score">0</div>
+    <p style="font-size:13px">输入名字上传到排行榜：</p>
+    <input id="result-name" placeholder="你的名字（选填）" maxlength="8">
+    <div class="result-btns">
+      <button class="btn-primary" id="btn-upload">&#x1F3C6; 上传分数</button>
+      <button class="btn-ghost" id="btn-replay">&#x1F504; 再玩一次</button>
+      <button class="btn-ghost" id="btn-view-map">&#x1F4CD; 查看地图</button>
+      <button class="btn-ghost" id="btn-leader">&#x1F3C6; 排行榜</button>
+    </div>
+  </div>
+
+  <!-- 排行榜 -->
+  <div id="lb-layer">
+    <h2>&#x1F3C6; 排行榜 TOP 10</h2>
+    <div id="lb-rows"></div>
+    <button id="lb-close">&#x2716; 关闭</button>
+  </div>
+
 </div>
 
 <script>
-// 排行榜假数据 (避免空列表)
-var FAKE_LB = [
-  {name:"林志远",score:6850},{name:"王诗晴",score:3520},{name:"张浩然",score:2890},
-  {name:"陈思琪",score:1840},{name:"李明辉",score:1560},{name:"周雨彤",score:1280},
-  {name:"吴俊杰",score:960},{name:"郑雅婷",score:750},{name:"徐子轩",score:640},{name:"孙梦瑶",score:620}
-];
-var LB_TOKEN = ""; // 上传用token，如不需要可留空
-
-// 音频
-var bgm=new Audio("assets/bgm.mp3");bgm.loop=true;bgm.volume=0.3;
-var btnS=new Audio("assets/btn.mp3");
-var catchS=new Audio("assets/catch.mp3");
-function playBgm(){bgm.play().catch(function(){});}
-function playBtn(){btnS.currentTime=0;btnS.play().catch(function(){});}
-function playCatch(){catchS.currentTime=0;catchS.play().catch(function(){});}
-
-// 状态
-var STAGE=document.getElementById("stage");
-var cv=document.getElementById("cv");
-var ctx=cv.getContext("2d");
-var charEl=document.getElementById("char");
-var state={char:"groom",score:0,time:30,items:[],running:false,charX:0.5,touched:false,storm:0};
-
-// 自适应画布
-function fitCanvas(){
-  var r=STAGE.getBoundingClientRect();
-  cv.width=r.width;cv.height=r.height;
-}
-window.addEventListener("resize",fitCanvas);
-fitCanvas();
-
-// 场景切换
-function show(name){
-  console.log("[show] ->", name);
-  document.querySelectorAll(".screen").forEach(function(s){s.classList.remove("active")});
-  var el=document.getElementById(name);
-  if(el){
-    el.classList.add("active");
-    console.log("[show]", name, "ok, display=", getComputedStyle(el).display);
-  }else{
-    console.error("[show]", name, "NOT FOUND");
-  }
-  if(name==="game"){fitCanvas();startGame();}
-  if(name==="start"){document.getElementById("modal").classList.remove("show");}
-}
-
-// 按钮事件
-document.getElementById("startBtn").onclick=function(){playBtn();playBgm();setTimeout(function(){show("select");},100);};
-document.getElementById("groomBtn").onclick=function(e){
-  e.stopPropagation();
-  playBtn();
-  state.char="groom";
-  charEl.src="assets/groom.webp";
-  setTimeout(function(){show("rules");},50);
-};
-document.getElementById("brideBtn").onclick=function(e){
-  e.stopPropagation();
-  playBtn();
-  state.char="bride";
-  charEl.src="assets/bride.webp";
-  setTimeout(function(){show("rules");},50);
-};
-document.getElementById("startGameBtn").onclick=function(){playBtn();show("game");};
-document.getElementById("mapBtn").onclick=function(){playBtn();window.open("https://j.map.baidu.com/0e/uf_h","_blank");};
-document.getElementById("joinBtn").onclick=function(){playBtn();show("thanks");};
-document.getElementById("goReplay").onclick=function(){playBtn();show("select");};
-document.getElementById("goMap").onclick=function(){playBtn();show("map");};
-document.getElementById("goLeader").onclick=function(){playBtn();showLeaderboard();};
-document.getElementById("lbClose").onclick=function(){document.getElementById("lbBox").classList.remove("show");};
-document.getElementById("uploadBtn").onclick=function(){
-  playBtn();
-  var n=document.getElementById("nameInput").value.trim()||"匿名";
-  uploadScore(n,state.score);
+// ==================== 状态 ====================
+var State = {
+  scene: "start",
+  char: "groom",
+  score: 0,
+  time: 30,
+  running: false,
+  charX: 0.5,
+  items: [],
+  stormT: 0,
+  spawnT: 0,
+  stormActive: 0
 };
 
-// 触摸控制角色
-function onTouch(e){
-  if(!state.running)return;
-  e.preventDefault();
-  var t=e.touches?e.touches[0]:e;
-  var r=STAGE.getBoundingClientRect();
-  var x=(t.clientX-r.left)/r.width;
-  state.charX=Math.max(0.12,Math.min(0.88,x));
-  charEl.style.left=(state.charX*100)+"%";
-  charEl.style.transform="translateX(-50%)"+(state.char==="groom"&&state.charX<0.5?" scaleX(-1)":"");
-}
-STAGE.addEventListener("touchstart",onTouch,{passive:false});
-STAGE.addEventListener("touchmove",onTouch,{passive:false});
-STAGE.addEventListener("mousedown",onTouch);
-STAGE.addEventListener("mousemove",function(e){if(e.buttons)onTouch(e);});
+// ==================== 音频 ====================
+var Bgm = new Audio("assets/bgm.mp3");
+Bgm.loop = true;
+Bgm.volume = 0.35;
+var BtnSnd = new Audio("assets/btn.mp3");
+var CatchSnd = new Audio("assets/catch.mp3");
 
-// 道具图片预加载
-var ICONS={};
-["heart_red","heart_yellow","letter","ring"].forEach(function(k){
-  var im=new Image();
-  im.src="assets/"+k+".webp";
-  ICONS[k]=im;
+function playBgm() {
+  Bgm.play().catch(function() {});
+}
+function playBtn() {
+  BtnSnd.currentTime = 0;
+  BtnSnd.play().catch(function() {});
+}
+function playCatch() {
+  CatchSnd.currentTime = 0;
+  CatchSnd.play().catch(function() {});
+}
+
+// ==================== 预加载图片 ====================
+var ICONS = {};
+["heart_red","heart_yellow","letter","ring"].forEach(function(k) {
+  var img = new Image();
+  img.src = "assets/" + k + ".webp";
+  ICONS[k] = img;
 });
 
-// 游戏循环
-function startGame(){
-  state.score=0;state.time=30;state.items=[];state.running=true;state.storm=0;
-  document.getElementById("modal").classList.remove("show");
-  document.getElementById("score").textContent="0分";
-  document.getElementById("time").textContent="30秒";
-  var last=0,spawnT=0,stormT=0;
-  function loop(t){
-    if(!state.running)return;
-    if(!last)last=t;
-    var dt=(t-last)/1000;last=t;
-    state.time-=dt;
-    if(state.time<=0){state.time=0;endGame();return;}
-    document.getElementById("time").textContent=Math.ceil(state.time)+"秒";
+// ==================== 场景切换 ====================
+function goScene(name) {
+  // 隐藏所有场景
+  var scenes = document.querySelectorAll(".screen");
+  for (var i = 0; i < scenes.length; i++) {
+    scenes[i].classList.remove("active");
+  }
+  // 显示目标
+  var target = document.getElementById("s-" + name);
+  if (!target) {
+    console.error("scene not found: s-" + name);
+    return;
+  }
+  target.classList.add("active");
+  State.scene = name;
+
+  // 各场景特殊处理
+  if (name === "game") {
+    initGame();
+  }
+  if (name === "result") {
+    showResult();
+  }
+}
+
+// ==================== 游戏画布 ====================
+var canvas = document.getElementById("game-canvas");
+var ctx = canvas.getContext("2d");
+var charEl = document.getElementById("game-char");
+
+function resizeCanvas() {
+  var r = canvas.getBoundingClientRect();
+  canvas.width = r.width;
+  canvas.height = r.height;
+}
+window.addEventListener("resize", resizeCanvas);
+resizeCanvas();
+
+function initGame() {
+  resizeCanvas();
+  State.score = 0;
+  State.time = 30;
+  State.running = true;
+  State.items = [];
+  State.stormT = 10;
+  State.spawnT = 0;
+  State.stormActive = 0;
+  document.getElementById("result-layer").classList.remove("show");
+  updateHUD();
+  var last = 0;
+  function loop(ts) {
+    if (!State.running) return;
+    if (!last) last = ts;
+    var dt = (ts - last) / 1000;
+    last = ts;
+    State.time -= dt;
+    if (State.time <= 0) {
+      State.time = 0;
+      State.running = false;
+      goScene("result");
+      return;
+    }
+
     // 生成道具
-    spawnT-=dt;stormT-=dt;
-    if(spawnT<=0){
-      var r=Math.random();
-      var type=r<0.45?"heart_red":r<0.65?"heart_yellow":r<0.85?"letter":"ring";
-      // 风暴期间只出请帖
-      if(state.storm>0){type="letter";}
-      state.items.push({x:0.1+Math.random()*0.8,y:-0.05,type:type,vy:0.4+Math.random()*0.3});
-      spawnT=state.storm>0?0.15:0.6+Math.random()*0.4;
+    State.stormT -= dt;
+    State.spawnT -= dt;
+    if (State.stormT <= 0) {
+      State.stormActive = 2.5;
+      State.stormT = 10;
     }
-    if(stormT<=0&&state.storm<=0){
-      // 10秒一次请帖风暴
-      state.storm=2;stormT=10;
+    if (State.stormActive > 0) State.stormActive -= dt;
+
+    if (State.spawnT <= 0) {
+      var type;
+      if (State.stormActive > 0) {
+        type = "letter";
+        State.spawnT = 0.12;
+      } else {
+        var r = Math.random();
+        type = r < 0.45 ? "heart_red" : r < 0.65 ? "heart_yellow" : r < 0.82 ? "letter" : "ring";
+      }
+      State.items.push({
+        x: 0.08 + Math.random() * 0.84,
+        y: -0.06,
+        type: type,
+        vy: 0.38 + Math.random() * 0.28
+      });
+      if (State.stormActive > 0) {
+        State.spawnT = 0.12;
+      } else {
+        State.spawnT = 0.5 + Math.random() * 0.5;
+      }
     }
-    if(state.storm>0){state.storm-=dt;}
-    // 移动+碰撞
-    var cw=cv.width,ch=cv.height;
-    for(var i=state.items.length-1;i>=0;i--){
-      var it=state.items[i];
-      it.y+=it.vy*dt*ch;
-      // 碰撞
-      if(it.y>0.78&&it.y<0.95){
-        var dx=Math.abs(it.x-state.charX);
-        if(dx<0.12){
-          if(it.type==="heart_red"){state.score+=10;playCatch();}
-          else if(it.type==="heart_yellow"){state.score-=20;playBtn();}
-          else if(it.type==="ring"){state.score+=50;playCatch();}
-          // letter 不扣分
-          state.items.splice(i,1);continue;
+
+    // 移动道具
+    var cw = canvas.width, ch = canvas.height;
+    var toRemove = [];
+    for (var i = 0; i < State.items.length; i++) {
+      var it = State.items[i];
+      it.y += it.vy * dt;
+
+      // 碰撞检测
+      if (it.y > 0.77 && it.y < 0.96) {
+        var dx = Math.abs(it.x - State.charX);
+        if (dx < 0.13) {
+          if (it.type === "heart_red") {
+            State.score += 10;
+            playCatch();
+          } else if (it.type === "heart_yellow") {
+            State.score -= 20;
+            playBtn();
+          } else if (it.type === "ring") {
+            State.score += 50;
+            playCatch();
+          }
+          // letter 不处理
+          toRemove.push(i);
         }
       }
-      if(it.y>1.2){state.items.splice(i,1);}
+      if (it.y > 1.15) toRemove.push(i);
     }
-    document.getElementById("score").textContent=state.score+"分";
-    draw();
+    for (var j = toRemove.length - 1; j >= 0; j--) {
+      State.items.splice(toRemove[j], 1);
+    }
+
+    updateHUD();
+    drawItems();
     requestAnimationFrame(loop);
   }
   requestAnimationFrame(loop);
 }
 
-function draw(){
-  var w=cv.width,h=cv.height;
-  ctx.clearRect(0,0,w,h);
-  state.items.forEach(function(it){
-    var img=ICONS[it.type];
-    var sz=it.type==="ring"?40:it.type==="letter"?50:60;
-    var x=it.x*w-sz/2,y=it.y*h-sz/2;
-    if(img&&img.complete){
-      ctx.drawImage(img,x,y,sz,sz);
-    }else{
-      ctx.fillStyle=it.type==="heart_red"?"#FF4444":it.type==="heart_yellow"?"#FFD700":it.type==="ring"?"#FF69B4":"#90EE90";
-      ctx.beginPath();ctx.arc(x+sz/2,y+sz/2,sz/2,0,Math.PI*2);ctx.fill();
-    }
-  });
+function updateHUD() {
+  var s = document.getElementById("hud-score");
+  var t = document.getElementById("hud-time");
+  if (s) s.textContent = State.score + "分";
+  if (t) t.textContent = Math.ceil(State.time) + "秒";
 }
 
-function endGame(){
-  state.running=false;
-  document.getElementById("finalScore").textContent=state.score;
-  document.getElementById("modal").classList.add("show");
-}
-
-// 上传分数
-function uploadScore(name,score){
-  if(!LB_TOKEN){alert("分数已记录："+name+" "+score+"分");return;}
-  var x=new XMLHttpRequest();
-  x.open("POST","https://api.github.com/repos/guanqicong/guanqicong.github.io/issues",true);
-  x.setRequestHeader("Authorization","token "+LB_TOKEN);
-  x.setRequestHeader("Content-Type","application/json");
-  x.onload=function(){alert(x.status===201?"上传成功！":"上传失败："+x.status);};
-  x.send(JSON.stringify({title:"[LB] "+name+" "+score,body:"得分："+score,labels:["leaderboard"]}));
-}
-
-// 排行榜
-function showLeaderboard(){
-  var merged=FAKE_LB.slice();
-  if(LB_TOKEN){
-    var x=new XMLHttpRequest();
-    x.open("GET","https://api.github.com/repos/guanqicong/guanqicong.github.io/issues?state=open&labels=leaderboard&per_page=30",true);
-    x.setRequestHeader("Authorization","token "+LB_TOKEN);
-    x.onload=function(){
-      if(x.status===200){
-        try{
-          var issues=JSON.parse(x.responseText);
-          issues.forEach(function(it){
-            var m=it.title.match(/\[LB\]\s*(.+?)\s+(-?\d+)/);
-            if(m)merged.push({name:m[1],score:parseInt(m[2])});
-          });
-        }catch(e){}
-      }
-      renderLB(merged);
-    };
-    x.send();
-  }else{
-    renderLB(merged);
-  }
-}
-function maskName(n){
-  if(!n)return"匿名";
-  return n.charAt(0)+"*".repeat(Math.max(1,n.length-1));
-}
-function renderLB(arr){
-  arr.sort(function(a,b){return b.score-a.score;});
-  arr=arr.slice(0,10);
-  var html="";
-  arr.forEach(function(r,i){
-    var medal=i===0?"🥇":i===1?"🥈":i===2?"🥉":(i+1);
-    html+='<div class="row"><span>'+medal+" "+maskName(r.name)+'</span><span><b>'+r.score+"</b></span></div>";
-  });
-  document.getElementById("lbList").innerHTML=html||"<p>暂无数据</p>";
-  document.getElementById("lbBox").classList.add("show");
-}
-
-
-// 兜底：每 100ms 检查当前应该是哪个场景
-var _wantShow="start";
-var _origShow=show;
-window.show=function(n){_wantShow=n;_origShow(n);};
-setInterval(function(){
-  if(_wantShow!=="game"){
-    var el=document.getElementById(_wantShow);
-    if(el && !el.classList.contains("active")){
-      console.warn("[兜底] 强制显示", _wantShow);
-      _origShow(_wantShow);
+function drawItems() {
+  var w = canvas.width, h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+  for (var i = 0; i < State.items.length; i++) {
+    var it = State.items[i];
+    var sz = it.type === "ring" ? 38 : it.type === "letter" ? 48 : 56;
+    var img = ICONS[it.type];
+    var x = it.x * w - sz / 2;
+    var y = it.y * h - sz / 2;
+    if (img && img.complete) {
+      ctx.drawImage(img, x, y, sz, sz);
+    } else {
+      ctx.fillStyle = it.type === "heart_red" ? "#FF4444" :
+                      it.type === "heart_yellow" ? "#FFD700" :
+                      it.type === "ring" ? "#FF69B4" : "#90EE90";
+      ctx.beginPath();
+      ctx.arc(x + sz / 2, y + sz / 2, sz / 2, 0, Math.PI * 2);
+      ctx.fill();
     }
   }
-},200);
+}
 
-// 启动：隐藏 loading
-window.addEventListener("load",function(){
-  setTimeout(function(){document.getElementById("loading").style.display="none";},300);
+function showResult() {
+  var el = document.getElementById("result-layer");
+  if (el) el.classList.add("show");
+  var scoreEl = document.getElementById("result-score");
+  if (scoreEl) scoreEl.textContent = State.score;
+}
+
+// ==================== 排行榜 ====================
+var FAKE_LB = [
+  {name:"林志远",score:6850},{name:"王诗晴",score:3520},{name:"张浩然",score:2890},
+  {name:"陈思琪",score:1840},{name:"李明辉",score:1560},{name:"周雨彤",score:1280},
+  {name:"吴俊杰",score:960},{name:"郑雅婷",score:750},{name:"徐子轩",score:640},{name:"孙梦瑶",score:620}
+];
+
+function maskName(n) {
+  if (!n || n.length < 2) return "匿名";
+  return n.charAt(0) + "*".repeat(n.length - 1);
+}
+
+function showLeaderboard() {
+  var merged = FAKE_LB.slice();
+  var rowsEl = document.getElementById("lb-rows");
+  if (!rowsEl) return;
+  function render(arr) {
+    arr.sort(function(a, b){ return b.score - a.score; });
+    arr = arr.slice(0, 10);
+    var html = "";
+    for (var i = 0; i < arr.length; i++) {
+      var r = arr[i];
+      var medal = i === 0 ? "&#x1F947;" : i === 1 ? "&#x1F948;" : i === 2 ? "&#x1F949;" : (i + 1);
+      var color = i === 0 ? "#FFD700" : i === 1 ? "#C0C0C0" : i === 2 ? "#CD7F32" : "#fff";
+      html += '<div class="lb-row" style="color:' + color + '">' +
+        '<span>' + medal + ' ' + maskName(r.name) + '</span>' +
+        '<span><b>' + r.score + '</b>分</span></div>';
+    }
+    rowsEl.innerHTML = html || "<p style='text-align:center;padding:20px'>暂无数据</p>";
+  }
+  render(merged);
+  var lbEl = document.getElementById("lb-layer");
+  if (lbEl) lbEl.classList.add("show");
+}
+
+// ==================== 触摸/鼠标控制角色 ====================
+function moveChar(e) {
+  if (!State.running) return;
+  e.preventDefault();
+  var touch = e.touches ? e.touches[0] : e;
+  var rect = document.getElementById("stage").getBoundingClientRect();
+  var x = (touch.clientX - rect.left) / rect.width;
+  State.charX = Math.max(0.10, Math.min(0.90, x));
+  charEl.style.left = (State.charX * 100) + "%";
+  charEl.style.transform = "translateX(-50%)" +
+    (State.char === "bride" && State.charX > 0.5 ? " scaleX(-1)" : "");
+}
+
+document.getElementById("stage").addEventListener("touchstart", moveChar, {passive:false});
+document.getElementById("stage").addEventListener("touchmove", moveChar, {passive:false});
+document.getElementById("stage").addEventListener("mousedown", function(e){ moveChar(e); });
+document.getElementById("stage").addEventListener("mousemove", function(e){ if(e.buttons) moveChar(e); });
+
+// ==================== 按钮事件 ====================
+document.getElementById("btn-start").onclick = function() {
+  playBtn();
+  playBgm();
+  goScene("select");
+};
+
+document.getElementById("btn-groom").onclick = function() {
+  playBtn();
+  State.char = "groom";
+  charEl.src = "assets/groom.webp";
+  charEl.style.transform = "";
+  goScene("rules");
+};
+
+document.getElementById("btn-bride").onclick = function() {
+  playBtn();
+  State.char = "bride";
+  charEl.src = "assets/bride.webp";
+  charEl.style.transform = "scaleX(-1)";
+  goScene("rules");
+};
+
+document.getElementById("btn-rules-start").onclick = function() {
+  playBtn();
+  goScene("game");
+};
+
+document.getElementById("btn-map-area").onclick = function() {
+  playBtn();
+  window.open("https://j.map.baidu.com/0e/uf_h", "_blank");
+};
+
+document.getElementById("btn-join").onclick = function() {
+  playBtn();
+  goScene("thanks");
+};
+
+document.getElementById("btn-upload").onclick = function() {
+  playBtn();
+  var name = document.getElementById("result-name").value.trim() || "匿名";
+  alert("分数已记录：" + name + " " + State.score + "分");
+};
+
+document.getElementById("btn-replay").onclick = function() {
+  playBtn();
+  goScene("select");
+};
+
+document.getElementById("btn-view-map").onclick = function() {
+  playBtn();
+  goScene("map");
+};
+
+document.getElementById("btn-leader").onclick = function() {
+  playBtn();
+  showLeaderboard();
+};
+
+document.getElementById("lb-close").onclick = function() {
+  var lbEl = document.getElementById("lb-layer");
+  if (lbEl) lbEl.classList.remove("show");
+};
+
+// ==================== 启动 ====================
+window.addEventListener("load", function() {
+  // 隐藏 loading
+  var loading = document.getElementById("loading-screen");
+  if (loading) loading.classList.add("hidden");
 });
 </script>
 </body>
