@@ -30,6 +30,119 @@
   }
   #loading .tip { margin-top:4vw; font-size:3.6vw; color:rgba(255,255,255,.7); }
   @keyframes spin { to { transform:rotate(360deg); } }
+
+  /* 游戏规则按钮 - 左上角 */
+  #helpBtn {
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 300;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: rgba(139, 0, 0, 0.82);
+    color: #FFD700;
+    border: 3px solid #FFD700;
+    font-size: 13px;
+    font-weight: bold;
+    line-height: 1.3;
+    cursor: pointer;
+    text-align: center;
+    padding: 0;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+    letter-spacing: 0;
+    font-family: sans-serif;
+    display: none;
+  }
+  #helpBtn.visible { display: block; }
+  /* 规则弹窗 */
+  #helpModal {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 500;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+  }
+  #helpModal.show { display: flex; }
+  .help-card {
+    background: linear-gradient(160deg, #8b0000 0%, #cc0000 50%, #8b0000 100%);
+    border: 4px solid #FFD700;
+    border-radius: 20px;
+    width: 88vw;
+    max-width: 640px;
+    padding: 28px 24px 24px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+    font-family: sans-serif;
+    color: #fff;
+    max-height: 88vh;
+    overflow-y: auto;
+    position: relative;
+  }
+  .help-title {
+    text-align: center;
+    font-size: 36px;
+    font-weight: bold;
+    color: #FFD700;
+    margin-bottom: 20px;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.5);
+  }
+  .rule-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 14px;
+    font-size: 24px;
+    line-height: 1.5;
+  }
+  .rule-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+    margin-right: 16px;
+    flex-shrink: 0;
+    border: 3px solid #FFD700;
+  }
+  .rule-text { flex: 1; }
+  .rule-red { background: #cc2222; }
+  .rule-yellow { background: #e6c200; color: #333; }
+  .rule-ring { background: linear-gradient(135deg, #FFD700, #FFA500); }
+  .rule-letter { background: #555; }
+  .rule-score {
+    font-weight: bold;
+    font-size: 26px;
+    white-space: nowrap;
+    margin-left: 8px;
+  }
+  .rule-score.pos { color: #7FFF7F; }
+  .rule-score.neg { color: #FF6B6B; }
+  .rule-score.ring { color: #FFD700; }
+  .rule-note {
+    text-align: center;
+    font-size: 20px;
+    color: rgba(255,255,255,0.7);
+    margin-top: 16px;
+    line-height: 1.6;
+  }
+  .help-close {
+    display: block;
+    width: 100%;
+    margin-top: 20px;
+    padding: 14px;
+    background: #FFD700;
+    color: #8b0000;
+    border: none;
+    border-radius: 12px;
+    font-size: 26px;
+    font-weight: bold;
+    cursor: pointer;
+    text-align: center;
+  }
 </style>
 <script>
 /* BGM 自动播放引擎（最早执行）：打开链接即尝试播放，微信 JSBridge 就绪立即播放 */
@@ -110,6 +223,7 @@
 <body>
 <div id="stage">
   <div id="loading"><div class="ring"></div><div class="tip" id="loadTip">加载中 0/5</div></div>
+  <button id="helpBtn" onclick="showHelp()">&#x2753;<br>规则</button>
 
   <!-- 开始 -->
   <div id="start" class="screen">
@@ -273,6 +387,7 @@ const LOGIC_W = 720, LOGIC_H = 1280;
   }
 
   function finishLoading(){
+  document.getElementById("helpBtn").classList.add("visible");
     const l = document.getElementById("loading");
     if(l) l.style.display = "none";
     show("start");
@@ -425,7 +540,49 @@ const LOGIC_W = 720, LOGIC_H = 1280;
 
   }
 
-  function onDown(e){
+  function showHelp(){
+    var modal = document.getElementById("helpModal");
+    if(!modal){
+      modal = document.createElement("div");
+      modal.id = "helpModal";
+      modal.innerHTML = [
+        '<div class="help-card">',
+        '<div class="help-title">&#x1F3C6; 游戏规则</div>',
+        '<div class="rule-row">',
+          '<div class="rule-icon rule-red">&#x2764;&#xFE0F;</div>',
+          '<div class="rule-text">接住<span style="color:#FFD700;font-weight:bold">红心</span></div>',
+          '<div class="rule-score pos">+10</div>',
+        '</div>',
+        '<div class="rule-row">',
+          '<div class="rule-icon rule-yellow">&#x1F49B;</div>',
+          '<div class="rule-text">接住<span style="color:#FFD700;font-weight:bold">黄心</span>要躲开！</div>',
+          '<div class="rule-score neg">-20</div>',
+        '</div>',
+        '<div class="rule-row">',
+          '<div class="rule-icon rule-ring">&#x1F48D;</div>',
+          '<div class="rule-text">接到<span style="color:#FFD700;font-weight:bold">戒指</span>（稀有）</div>',
+          '<div class="rule-score ring">+50</div>',
+        '</div>',
+        '<div class="rule-row">',
+          '<div class="rule-icon rule-letter">&#x2709;&#xFE0F;</div>',
+          '<div class="rule-text">收到<span style="color:#FFD700;font-weight:bold">请帖</span></div>',
+          '<div class="rule-score neg">游戏结束</div>',
+        '</div>',
+        '<div class="rule-row">',
+          '<div class="rule-icon" style="background:#555;color:#fff;font-size:18px;">&#x2193;</div>',
+          '<div class="rule-text">分数变成<span style="color:#FF6B6B;font-weight:bold">负数</span></div>',
+          '<div class="rule-score neg">游戏结束</div>',
+        '</div>',
+        '<div class="rule-note">&#x1F389; 接到红心/戒指得分<br>&#x26A0;&#xFE0F; 躲开黄心和请帖！</div>',
+        '<button class="help-close" onclick="document.getElementById(\x27helpModal\x27).classList.remove(\x27show\x27)">知道了！</button>',
+        '</div>'
+      ].join('');
+      document.body.appendChild(modal);
+    }
+    modal.classList.add("show");
+  }
+
+function onDown(e){
     e.preventDefault();
     const rect = stage.getBoundingClientRect();
     const cx = (e.touches && e.touches[0]) ? e.touches[0].clientX : e.clientX;
