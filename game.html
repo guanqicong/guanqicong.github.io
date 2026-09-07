@@ -929,7 +929,7 @@ const LOGIC_W = 720, LOGIC_H = 1280;
   ];
   var LB_TOKEN = (["github_pat_11CMWBH2A0kDm","judpMod1m_RPF3Zhm4PXL7nS","4N6TwWUXPSusqaiWAXwl8mLx","yMi9ZZLDYI4YAfVI4oA8h"].join(""));
   
-function maskName(n){if(!n||n.length<=1)return n||"";return n[0]+"*".repeat(n.length-1);}
+function maskName(n){if(!n||n.length<=1)return n||"";var a=[];for(var i=1;i<n.length;i++)a.push("*");return n[0]+a.join("");}
 function submitScore(name, score){
     var x = new XMLHttpRequest();
     x.open("POST","https://api.github.com/repos/guanqicong/guanqicong.github.io/issues",true);
@@ -946,8 +946,61 @@ function submitScore(name, score){
 function fetchLB(){
     var list = document.getElementById("lb-rows");
     if(!list) return;
-    var real = [];
-    function render(data){
+    // 初始化为假数据
+    var merged = FAKE_LB.slice();
+    function doRender(){
+      merged.sort(function(a,b){return b.score-a.score;});
+      var top = merged.slice(0,10);
+      var html = "";
+      for(var k=0;k<top.length;k++){
+        var row = top[k];
+        var maskedName = maskName(row.name);
+        var medal = k===0?"&#x1F947;":k===1?"&#x1F948;":k===2?"&#x1F949;":("<b>"+(k+1)+"</b>");
+        var rowColor = k===0?"#FFD700":k===1?"#C0C0C0":k===2?"#CD7F32":"#fff";
+        var bg = k%2===0?"rgba(255,255,255,.06)":"rgba(0,0,0,.15)";
+        html += '<div style="display:flex;align-items:center;padding:8px 12px;border-radius:6px;margin-bottom:4px;background:'+bg+';">'
+          + '<div style="width:50px;text-align:center;font-size:26px;">'+medal+'</div>'
+          + '<div style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:'+rowColor+';font-size:24px;padding:0 8px;">'+maskedName+'</div>'
+          + '<div style="width:110px;text-align:right;color:'+rowColor+';font-size:24px;font-weight:bold;">'+row.score+'</div>'
+        + '</div>';
+      }
+      if(html) list.innerHTML = html;
+    }
+    doRender();
+    // 从 GitHub 追加真实数据
+    try {
+      var xhr = new XMLHttpRequest();
+      xhr.open("GET","https://api.github.com/repos/guanqicong/guanqicong.github.io/issues?state=open&per_page=100",true);
+      xhr.setRequestHeader("Accept","application/vnd.github+json");
+      xhr.onload = function(){
+        if(xhr.status!==200) return;
+        try {
+          var issues = JSON.parse(xhr.responseText);
+          for(var i=0;i<issues.length;i++){
+            var m = issues[i].title.match(/\[LB\]\s*(.+?)\s+(-?\d+)/);
+            if(!m) continue;
+            var name = maskName(m[1]);
+            var score = parseInt(m[2]);
+            // 如果同名人已存在且分数更高则替换，否则追加
+            var exists = false;
+            for(var j=0;j<merged.length;j++){
+              if(merged[j].name === name && merged[j].score >= score){ exists = true; break; }
+            }
+            if(!exists){
+              // 移除同名低分
+              for(var j=merged.length-1;j>=0;j--){
+                if(merged[j].name === name) merged.splice(j,1);
+              }
+              merged.push({name:name, score:score});
+            }
+          }
+          doRender();
+        } catch(e){}
+      };
+      xhr.send();
+    } catch(e){}
+  }
+function render(data){
       data.sort(function(a,b){ return b.score - a.score; });
       var top = data.slice(0,10);
       var html = "";
