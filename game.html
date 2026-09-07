@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+﻿﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -202,7 +202,7 @@ const LOGIC_W = 720, LOGIC_H = 1280;
 
   const SHEET_COLS = 10, SHEET_ROWS = 8;
   const FRAME_COUNT = 76;
-  const CELL_W = 142, CELL_H = 254;
+  const CELL_W = 100, CELL_H = 178;
 
   const CHAR_W = 200, CHAR_H = Math.round(CHAR_W * CELL_H / CELL_W);
   const GROUND_Y = LOGIC_H - 110;
@@ -1058,16 +1058,24 @@ function showLeaderboardModal(){
       var x = new XMLHttpRequest();
       x.open("GET","https://api.github.com/repos/guanqicong/guanqicong.github.io/issues?state=open&per_page=100",true);
       x.setRequestHeader("Accept","application/vnd.github+json");
-      x.onload = function(){
+          x.onload = function(){
         if(x.status!==200) return;
         try {
           var issues = JSON.parse(x.responseText);
-          var real = [];
+          var modalMerged = FAKE_LB.slice();
           for(var i=0;i<issues.length;i++){
             var m = issues[i].title.match(/\[LB\]\s*(.+?)\s+(-?\d+)/);
-            if(m) real.push({name:m[1], score:parseInt(m[2])});
+            if(!m) continue;
+            var name = m[1], score = parseInt(m[2]);
+            // 移除同名低分
+            for(var j=modalMerged.length-1;j>=0;j--){
+              if(modalMerged[j].name === name) modalMerged.splice(j,1);
+            }
+            modalMerged.push({name:name, score:score});
           }
-          if(real.length>0) render(real);
+          modalMerged.sort(function(a,b){ return b.score - a.score; });
+          var top10 = modalMerged.slice(0,10);
+          render(top10);
         } catch(e){}
       };
       x.send();
