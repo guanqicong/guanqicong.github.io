@@ -319,6 +319,16 @@ groomSheet: "data:image/webp;base64,UklGRjoXBABXRUJQVlA4WAoAAAAQAAAAeQ0AvwMAQUxQ
       }).catch(function(){});
     });
 
+    // 预热规则视频：设 src + preload + 静音预播放（用户走到选角色时已在缓冲，切到规则页 0 黑屏）
+    try {
+      var vr = document.getElementById("vRules");
+      if (vr) {
+        vr.muted = true; vr.loop = true; vr.volume = 0; vr.preload = "auto";
+        if (!vr.src || vr.src.indexOf(ASSETS.rulesV) < 0) vr.src = ASSETS.rulesV;
+        vr.play().catch(function(){});
+      }
+    } catch(e) {}
+
     return Promise.all(promises).catch(function(){}).then(function(){ finishLoading(); });
   }
 
