@@ -16,7 +16,7 @@
   .screen { position:absolute; top:0; left:0; right:0; bottom:0; display:none; }
   .screen.active { display:block; }
   video { position:absolute; top:0; left:0; right:0; bottom:0; width:100%; height:100%; object-fit:cover; background:#000; }
-  #gameCanvas { position:absolute; top:0; left:0; right:0; bottom:0; width:100%; height:100%; }
+  #gameCanvas { position:absolute; top:0; left:0; right:0; bottom:0; width:100%; height:100%; will-change:transform; transform:translateZ(0); backface-visibility:hidden; touch-action:none; }
   #startArea, #groomBtn, #brideBtn, #mapArea, #joinBtn, #mustBtn, #backBtn, #rulesBtn {
     position:absolute; cursor:pointer; background:transparent; border:none;
   }
@@ -272,7 +272,7 @@ groomSheet: "data:image/webp;base64,UklGRjoXBABXRUJQVlA4WAoAAAAQAAAAeQ0AvwMAQUxQ
   function loadImage(src){
     return new Promise((res)=>{
       const i=new Image();
-      i.onload=()=>res(i);
+      i.onload=()=>{ try { if (i.decode) { i.decode().then(()=>res(i)).catch(()=>res(i)); } else { res(i); } } catch(e) { res(i); } };
       i.onerror=()=>{ console.warn("图片加载失败:", src); res(null); }; // 容错：失败也放行
       i.src=src;
     });
