@@ -576,13 +576,14 @@ groomSheet: "data:image/webp;base64,UklGRjoXBABXRUJQVlA4WAoAAAAQAAAAeQ0AvwMAQUxQ
   function resizeCanvas(){
     const canvas = game.canvas, ctx = game.ctx;
     const rect = stage.getBoundingClientRect();
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    game.scale = rect.width / LOGIC_W;
+    const dpr = window.devicePixelRatio || 1;
     canvas.width = Math.round(rect.width * dpr);
     canvas.height = Math.round(rect.height * dpr);
-    const sx = (rect.width * dpr) / LOGIC_W;
-    const sy = (rect.height * dpr) / LOGIC_H;
+    const sx = canvas.width / LOGIC_W;
+    const sy = canvas.height / LOGIC_H;
+    game.scale = rect.width / LOGIC_W;
     ctx.setTransform(sx, 0, 0, sy, 0, 0);
+    ctx.imageSmoothingEnabled = false;
   }
 
   window.addEventListener("resize", ()=>{ if(game.canvas) resizeCanvas(); });
@@ -728,7 +729,7 @@ groomSheet: "data:image/webp;base64,UklGRjoXBABXRUJQVlA4WAoAAAAQAAAAeQ0AvwMAQUxQ
       ctx.translate(h.x, h.y);
       ctx.rotate(h.rot);
       var hw2 = h.hw || h.r, hh2 = h.hh || h.r;
-      ctx.drawImage(img, -hw2, -hh2, hw2 * 2, hh2 * 2);
+      ctx.drawImage(img, -hw2, -hh2, hw2 * 2, hh2 * 2); ctx.imageSmoothingEnabled = false;
       ctx.restore();
     }
   }
@@ -755,7 +756,7 @@ groomSheet: "data:image/webp;base64,UklGRjoXBABXRUJQVlA4WAoAAAAQAAAAeQ0AvwMAQUxQ
       ctx.translate(h.x, h.y);
       ctx.rotate(h.rot);
       var hw2 = h.hw || h.r, hh2 = h.hh || h.r;
-      ctx.drawImage(img, -hw2, -hh2, hw2 * 2, hh2 * 2);
+      ctx.drawImage(img, -hw2, -hh2, hw2 * 2, hh2 * 2); ctx.imageSmoothingEnabled = false;
       ctx.restore();
     }
 
@@ -778,7 +779,7 @@ groomSheet: "data:image/webp;base64,UklGRjoXBABXRUJQVlA4WAoAAAAQAAAAeQ0AvwMAQUxQ
         ctx.scale(-1, 1);
         ctx.drawImage(char.sheet, sx, sy, CELL_W, CELL_H, -w / 2, dy, w, h);
       } else {
-        ctx.drawImage(char.sheet, sx, sy, CELL_W, CELL_H, game.charX - w / 2, dy, w, h);
+        ctx.drawImage(char.sheet, sx, sy, CELL_W, CELL_H, game.charX - w / 2, dy, w, h); ctx.imageSmoothingEnabled = false;
       }
       ctx.restore();
     }
