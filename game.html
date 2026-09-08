@@ -320,7 +320,7 @@ groomSheet: "data:image/webp;base64,UklGRjoXBABXRUJQVlA4WAoAAAAQAAAAeQ0AvwMAQUxQ
     });
 
     // 背景图：后台流式加载，就绪后直接进缓存（不阻塞入口，进入游戏前通常已就绪）
-    loadImage(ASSETS.bg).then(function(img){ if(img){ RES.bg = img; buildBgCache(); } }).catch(function(){});
+    loadImage(ASSETS.bg).then(function(img){ if(img){ RES.bg = img; } }).catch(function(){});
 
     // 预热「开始」+「规则」视频：设 src + preload 静音预播，进入对应屏即秒播（不再黑屏等缓冲）
     try {
@@ -592,27 +592,8 @@ groomSheet: "data:image/webp;base64,UklGRjoXBABXRUJQVlA4WAoAAAAQAAAAeQ0AvwMAQUxQ
     game.scale = rect.width / LOGIC_W;
     ctx.setTransform(sx, 0, 0, sy, 0, 0);
     ctx.imageSmoothingEnabled = false;
-    buildBgCache();
   }
 
-  // 离屏缓存背景：仅按画布分辨率预渲染一次，每帧 1:1 贴图（避免大图每帧重采样，提升流畅度）
-  function buildBgCache(){
-    if(!RES.bg || !game.canvas) return;
-    if(!game.bgCache){
-      game.bgCache = document.createElement("canvas");
-      game.bgCacheCtx = game.bgCache.getContext("2d");
-    }
-    const cw = game.canvas.width, ch = game.canvas.height;
-    if(game.bgCache.width !== cw || game.bgCache.height !== ch){
-      game.bgCache.width = cw; game.bgCache.height = ch;
-    }
-    const bctx = game.bgCacheCtx;
-    const iw = RES.bg.width, ih = RES.bg.height;
-    const scale = Math.max(cw / iw, ch / ih);
-    const dw = iw * scale, dh = ih * scale;
-    bctx.clearRect(0, 0, cw, ch);
-    bctx.drawImage(RES.bg, (cw - dw)/2, (ch - dh)/2, dw, dh);
-  }
 
   window.addEventListener("resize", ()=>{ if(game.canvas) resizeCanvas(); });
 
@@ -726,8 +707,8 @@ groomSheet: "data:image/webp;base64,UklGRjoXBABXRUJQVlA4WAoAAAAQAAAAeQ0AvwMAQUxQ
       y: -r - 10,
       vy: ((type === 'letter' ? 420 : 240) + Math.random() * 160) * ((type === 'yellow' || type === 'letter') ? Math.pow(1.2, Math.floor(game.score / 500)) : 1),
       r: r,
-      hw: (type==='letter' ? 136 : type==='ring' ? 80 : r),
-      hh: (type==='letter' ? 77 : type==='ring' ? 44 : r),
+      hw: (type==='letter' ? 136 : type==='ring' ? 64 : r),
+      hh: (type==='letter' ? 77 : type==='ring' ? 64 : r),
       type: type,
       rot: (Math.random() * 2 - 1) * 0.3,
       vr: (Math.random() * 2 - 1) * 0.6,
@@ -739,9 +720,10 @@ groomSheet: "data:image/webp;base64,UklGRjoXBABXRUJQVlA4WAoAAAAQAAAAeQ0AvwMAQUxQ
     const ctx = game.ctx;
     ctx.clearRect(0, 0, LOGIC_W, LOGIC_H);
 
-    // 背景
-    if(game.bgCache) ctx.drawImage(game.bgCache, 0, 0, LOGIC_W, LOGIC_H);
-    else if(RES.bg) ctx.drawImage(RES.bg, 0, 0, LOGIC_W, LOGIC_H);
+    // 背景（直接绘制 + 平滑缩放，恢复此前顺畅观感）
+    ctx.imageSmoothingEnabled = true;
+    if(RES.bg) ctx.drawImage(RES.bg, 0, 0, LOGIC_W, LOGIC_H);
+    ctx.imageSmoothingEnabled = false;
 
     // 顶部积分 HUD
     drawScoreHud(ctx);
@@ -767,9 +749,10 @@ groomSheet: "data:image/webp;base64,UklGRjoXBABXRUJQVlA4WAoAAAAQAAAAeQ0AvwMAQUxQ
     const ctx = game.ctx;
     ctx.clearRect(0, 0, LOGIC_W, LOGIC_H);
 
-    // 背景
-    if(game.bgCache) ctx.drawImage(game.bgCache, 0, 0, LOGIC_W, LOGIC_H);
-    else if(RES.bg) ctx.drawImage(RES.bg, 0, 0, LOGIC_W, LOGIC_H);
+    // 背景（直接绘制 + 平滑缩放，恢复此前顺畅观感）
+    ctx.imageSmoothingEnabled = true;
+    if(RES.bg) ctx.drawImage(RES.bg, 0, 0, LOGIC_W, LOGIC_H);
+    ctx.imageSmoothingEnabled = false;
 
     // 顶部积分 HUD
     drawScoreHud(ctx);
