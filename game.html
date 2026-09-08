@@ -17,7 +17,7 @@
   .screen.active { display:block; }
   video { position:absolute; top:0; left:0; right:0; bottom:0; width:100%; height:100%; object-fit:cover; background:#000; }
   #gameCanvas { position:absolute; top:0; left:0; right:0; bottom:0; width:100%; height:100%; }
-  #startArea, #groomBtn, #brideBtn, #mapArea, #joinBtn, #mustBtn, #backBtn {
+  #startArea, #groomBtn, #brideBtn, #mapArea, #joinBtn, #mustBtn, #backBtn, #rulesBtn {
     position:absolute; cursor:pointer; background:transparent; border:none;
   }
   #loading {
@@ -161,6 +161,12 @@
     <button id="brideBtn"></button>
   </div>
 
+  <!-- 游戏规则 -->
+  <div id="rules" class="screen">
+    <video id="vRules" loop muted playsinline webkit-playsinline x5-playsinline x5-video-player-type="h5" x5-video-player-fullscreen="false"></video>
+    <button id="rulesBtn"></button>
+  </div>
+
   <!-- 接爱心 -->
   <div id="game" class="screen">
     <canvas id="gameCanvas"></canvas>
@@ -198,6 +204,7 @@ const LOGIC_W = 720, LOGIC_H = 1280;
     selectV:"assets/select_v2.mp4?t=1788801000",
     mapV:   "assets/map_v2.mp4?t=1788801000",
     thanksV:"assets/thanks_v2.mp4?t=1788801000",
+    rulesV: "assets/rules.mp4?t=1788801000",
     bg:     "assets/img_0.jpg?t=1788801000",
     heartRed:   "assets/img_1.webp?t=1788801000",
     heartYellow:"assets/img_2.webp?t=1788801000",
@@ -323,7 +330,7 @@ groomSheet: "data:image/webp;base64,UklGRjoXBABXRUJQVlA4WAoAAAAQAAAAeQ0AvwMAQUxQ
       // BGM 自动播放已在脚本开头处理（立即尝试 + 微信 JSBridge + 首次手势兜底）
       tryAutoBgm();
       // 预加载所有视频（避免切换场景时卡住）
-      ["vStart","vSelect","vMap","vThanks"].forEach(function(id){
+      ["vStart","vSelect","vMap","vThanks","vRules"].forEach(function(id){
         var v = document.getElementById(id);
         if(v && v.src){
           v.preload = "auto";
@@ -350,10 +357,11 @@ groomSheet: "data:image/webp;base64,UklGRjoXBABXRUJQVlA4WAoAAAAQAAAAeQ0AvwMAQUxQ
     document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
     document.getElementById(name).classList.add("active");
     // 关闭所有视频
-    ["vStart","vSelect","vMap","vThanks"].forEach(id=>{ pauseVid(id); });
+    ["vStart","vSelect","vMap","vThanks","vRules"].forEach(id=>{ pauseVid(id); });
     // 仅播放当前屏视频
     if(name==="start")  ensureVideo("vStart",  ASSETS.startV);
     if(name==="select") ensureVideo("vSelect", ASSETS.selectV);
+    if(name==="rules")  ensureVideo("vRules",  ASSETS.rulesV);
     if(name==="map"){
       ensureVideo("vMap", ASSETS.mapV);
       // 预加载感谢页视频：玩家看地图页时提前下载，点"参加"后立即播放
@@ -375,7 +383,7 @@ groomSheet: "data:image/webp;base64,UklGRjoXBABXRUJQVlA4WAoAAAAQAAAAeQ0AvwMAQUxQ
   }
 
   function vidFor(name){
-    return {"start":"vStart","select":"vSelect","map":"vMap","thanks":"vThanks"}[name] || null;
+    return {"start":"vStart","select":"vSelect","map":"vMap","thanks":"vThanks","rules":"vRules"}[name] || null;
   }
 
   function ensureVideo(id, src){
@@ -405,7 +413,7 @@ groomSheet: "data:image/webp;base64,UklGRjoXBABXRUJQVlA4WAoAAAAQAAAAeQ0AvwMAQUxQ
 
   // 全局手势/微信桥解锁：任何触摸或点击都尝试把已设 src 的视频播起来（微信需手势后才放行视频）
   function unlockVideos(){
-    ["vStart","vSelect","vMap","vThanks"].forEach(function(id){
+    ["vStart","vSelect","vMap","vThanks","vRules"].forEach(function(id){
       const v=document.getElementById(id);
       if(v && v.src && v.paused){
         var pv = v.play();
@@ -439,12 +447,18 @@ groomSheet: "data:image/webp;base64,UklGRjoXBABXRUJQVlA4WAoAAAAQAAAAeQ0AvwMAQUxQ
     const groomBtn = document.getElementById("groomBtn");
     groomBtn.style.left = "3%"; groomBtn.style.width = "40%";
     groomBtn.style.top = "81%"; groomBtn.style.height = "13%";
-    groomBtn.addEventListener("click", ()=>{ char={sheet:RES.groom}; playBtnSound(); show("game"); });
+    groomBtn.addEventListener("click", ()=>{ char={sheet:RES.groom}; playBtnSound(); show("rules"); });
 
     const brideBtn = document.getElementById("brideBtn");
     brideBtn.style.left = "50%"; brideBtn.style.width = "40%";
     brideBtn.style.top = "81%"; brideBtn.style.height = "13%";
-    brideBtn.addEventListener("click", ()=>{ char={sheet:RES.bride}; playBtnSound(); show("game"); });
+    brideBtn.addEventListener("click", ()=>{ char={sheet:RES.bride}; playBtnSound(); show("rules"); });
+
+    // 游戏规则界面：整屏可点，点击"开始接爱心"区域即进入接爱心（带按键音）
+    const rulesBtn = document.getElementById("rulesBtn");
+    rulesBtn.style.left = "0"; rulesBtn.style.top = "0";
+    rulesBtn.style.width = "100%"; rulesBtn.style.height = "100%";
+    rulesBtn.addEventListener("click", ()=>{ playBtnSound(); show("game"); });
 
     // 地图热点（新素材：x=18% y=53% w=62% h=20%，略扩大提升命中率）
     const mapArea = document.getElementById("mapArea");
