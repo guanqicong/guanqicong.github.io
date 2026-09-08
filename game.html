@@ -652,29 +652,29 @@ groomSheet: "data:image/webp;base64,UklGRjoXBABXRUJQVlA4WAoAAAAQAAAAeQ0AvwMAQUxQ
   }
 
   function spawnHeart(){
-    // 概率：红心 38.2%，黄心 38.2%，戒指 8%，请帖 15.6%（原 12% 加大 30%）
+    // 概率：红心 26.7%，黄心 45%，戒指 8%，请帖 20.3%（黄心多=干扰多，难度加大）
     var rand = Math.random();
     var type;
-    if(rand < 0.382){ type = 'red'; }
-    else if(rand < 0.764){ type = 'yellow'; }
-    else if(rand < 0.844){ type = 'ring'; }
+    if(rand < 0.267){ type = 'red'; }
+    else if(rand < 0.717){ type = 'yellow'; }
+    else if(rand < 0.797){ type = 'ring'; }
     else { type = 'letter'; }
 
     var r, imgSrc;
     if(type === 'ring'){
       r = 80;
     } else if(type === 'letter'){
-      r = 113;
+      r = 136;
     } else {
       r = type === 'red' ? (56 + Math.random() * 10) : (50 + Math.random() * 10);
     }
     game.hearts.push({
       x: 60 + Math.random() * (LOGIC_W - 120),
       y: -r - 10,
-      vy: 240 + Math.random() * 160,
+      vy: (type === 'letter' ? 420 : 240) + Math.random() * 160,
       r: r,
-      hw: (type==='letter' ? 113 : type==='ring' ? 80 : r),
-      hh: (type==='letter' ? 64 : type==='ring' ? 44 : r),
+      hw: (type==='letter' ? 136 : type==='ring' ? 80 : r),
+      hh: (type==='letter' ? 77 : type==='ring' ? 44 : r),
       type: type,
       rot: (Math.random() * 2 - 1) * 0.3,
       vr: (Math.random() * 2 - 1) * 0.6,
