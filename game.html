@@ -671,7 +671,7 @@ groomSheet: "data:image/webp;base64,UklGRjoXBABXRUJQVlA4WAoAAAAQAAAAeQ0AvwMAQUxQ
     game.hearts.push({
       x: 60 + Math.random() * (LOGIC_W - 120),
       y: -r - 10,
-      vy: (type === 'letter' ? 420 : 240) + Math.random() * 160,
+      vy: ((type === 'letter' ? 420 : 240) + Math.random() * 160) * ((type === 'yellow' || type === 'letter') ? Math.pow(1.2, Math.floor(game.score / 500)) : 1),
       r: r,
       hw: (type==='letter' ? 136 : type==='ring' ? 80 : r),
       hh: (type==='letter' ? 77 : type==='ring' ? 44 : r),
