@@ -339,15 +339,7 @@ groomSheet: "data:image/webp;base64,UklGRjoXBABXRUJQVlA4WAoAAAAQAAAAeQ0AvwMAQUxQ
       bindEvents();
       // BGM 自动播放已在脚本开头处理（立即尝试 + 微信 JSBridge + 首次手势兜底）
       tryAutoBgm();
-      // 预加载所有视频（避免切换场景时卡住）
-      ["vStart","vSelect","vMap","vThanks","vRules"].forEach(function(id){
-        var v = document.getElementById(id);
-        if(v && v.src){
-          v.preload = "auto";
-          v.muted = true; v.volume = 0; v.loop = true;
-          v.play().catch(function(){});
-        }
-      });
+      // 视频改为按需懒加载（见 show() 智能预载）：避免首屏一次性下载全部视频，加快加载、省流量
     };
     if(l){
       var tip = document.getElementById("loadTip");
@@ -381,6 +373,9 @@ groomSheet: "data:image/webp;base64,UklGRjoXBABXRUJQVlA4WAoAAAAQAAAAeQ0AvwMAQUxQ
       } catch(e){}
     }
     if(name==="thanks") ensureVideo("vThanks", ASSETS.thanksV);
+      // 智能预载：只预载“当前屏 + 下一屏”视频，省流量、加快首屏，且切换不卡
+      if(name==="start")  primeVid("vSelect", ASSETS.selectV);
+      if(name==="select") primeVid("vMap", ASSETS.mapV);
     // 延迟重试已移除，视频预加载保证立即可播
     // BGM：单一通用 BGM 贯穿全场，不随场景切换
     if(name==="game"){ 
@@ -419,6 +414,14 @@ groomSheet: "data:image/webp;base64,UklGRjoXBABXRUJQVlA4WAoAAAAQAAAAeQ0AvwMAQUxQ
       v.addEventListener("canplay", h1);
       tryPlay();
     }
+  }
+
+  // 智能预载：仅设置 src + preload，不强制播放，提前缓冲下一屏视频
+  function primeVid(id, src){
+    const v = document.getElementById(id);
+    if(!v) return;
+    v.muted = true; v.volume = 0; v.loop = true; v.preload = "auto";
+    if(!v.src || v.src.indexOf(src) < 0) v.src = src;
   }
 
   // 全局手势/微信桥解锁：任何触摸或点击都尝试把已设 src 的视频播起来（微信需手势后才放行视频）
@@ -584,6 +587,26 @@ groomSheet: "data:image/webp;base64,UklGRjoXBABXRUJQVlA4WAoAAAAQAAAAeQ0AvwMAQUxQ
     game.scale = rect.width / LOGIC_W;
     ctx.setTransform(sx, 0, 0, sy, 0, 0);
     ctx.imageSmoothingEnabled = false;
+    buildBgCache();
+  }
+
+  // 离屏缓存背景：仅按画布分辨率预渲染一次，每帧 1:1 贴图（避免大图每帧重采样，提升流畅度）
+  function buildBgCache(){
+    if(!RES.bg || !game.canvas) return;
+    if(!game.bgCache){
+      game.bgCache = document.createElement("canvas");
+      game.bgCacheCtx = game.bgCache.getContext("2d");
+    }
+    const cw = game.canvas.width, ch = game.canvas.height;
+    if(game.bgCache.width !== cw || game.bgCache.height !== ch){
+      game.bgCache.width = cw; game.bgCache.height = ch;
+    }
+    const bctx = game.bgCacheCtx;
+    const iw = RES.bg.width, ih = RES.bg.height;
+    const scale = Math.max(cw / iw, ch / ih);
+    const dw = iw * scale, dh = ih * scale;
+    bctx.clearRect(0, 0, cw, ch);
+    bctx.drawImage(RES.bg, (cw - dw)/2, (ch - dh)/2, dw, dh);
   }
 
   window.addEventListener("resize", ()=>{ if(game.canvas) resizeCanvas(); });
@@ -712,9 +735,8 @@ groomSheet: "data:image/webp;base64,UklGRjoXBABXRUJQVlA4WAoAAAAQAAAAeQ0AvwMAQUxQ
     ctx.clearRect(0, 0, LOGIC_W, LOGIC_H);
 
     // 背景
-    ctx.imageSmoothingEnabled = true;
-    if(RES.bg) ctx.drawImage(RES.bg, 0, 0, LOGIC_W, LOGIC_H);
-    ctx.imageSmoothingEnabled = false;
+    if(game.bgCache) ctx.drawImage(game.bgCache, 0, 0, LOGIC_W, LOGIC_H);
+    else if(RES.bg) ctx.drawImage(RES.bg, 0, 0, LOGIC_W, LOGIC_H);
 
     // 顶部积分 HUD
     drawScoreHud(ctx);
@@ -741,9 +763,8 @@ groomSheet: "data:image/webp;base64,UklGRjoXBABXRUJQVlA4WAoAAAAQAAAAeQ0AvwMAQUxQ
     ctx.clearRect(0, 0, LOGIC_W, LOGIC_H);
 
     // 背景
-    ctx.imageSmoothingEnabled = true;
-    if(RES.bg) ctx.drawImage(RES.bg, 0, 0, LOGIC_W, LOGIC_H);
-    ctx.imageSmoothingEnabled = false;
+    if(game.bgCache) ctx.drawImage(game.bgCache, 0, 0, LOGIC_W, LOGIC_H);
+    else if(RES.bg) ctx.drawImage(RES.bg, 0, 0, LOGIC_W, LOGIC_H);
 
     // 顶部积分 HUD
     drawScoreHud(ctx);
