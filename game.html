@@ -652,19 +652,19 @@ groomSheet: "data:image/webp;base64,UklGRjoXBABXRUJQVlA4WAoAAAAQAAAAeQ0AvwMAQUxQ
   }
 
   function spawnHeart(){
-    // 概率：红心 40%，黄心 40%，戒指 8%，请帖 12%
+    // 概率：红心 38.2%，黄心 38.2%，戒指 8%，请帖 15.6%（原 12% 加大 30%）
     var rand = Math.random();
     var type;
-    if(rand < 0.40){ type = 'red'; }
-    else if(rand < 0.80){ type = 'yellow'; }
-    else if(rand < 0.88){ type = 'ring'; }
+    if(rand < 0.382){ type = 'red'; }
+    else if(rand < 0.764){ type = 'yellow'; }
+    else if(rand < 0.844){ type = 'ring'; }
     else { type = 'letter'; }
 
     var r, imgSrc;
     if(type === 'ring'){
       r = 80;
     } else if(type === 'letter'){
-      r = 87;
+      r = 113;
     } else {
       r = type === 'red' ? (56 + Math.random() * 10) : (50 + Math.random() * 10);
     }
@@ -673,8 +673,8 @@ groomSheet: "data:image/webp;base64,UklGRjoXBABXRUJQVlA4WAoAAAAQAAAAeQ0AvwMAQUxQ
       y: -r - 10,
       vy: 240 + Math.random() * 160,
       r: r,
-      hw: (type==='letter' ? 87 : type==='ring' ? 80 : r),
-      hh: (type==='letter' ? 49 : type==='ring' ? 44 : r),
+      hw: (type==='letter' ? 113 : type==='ring' ? 80 : r),
+      hh: (type==='letter' ? 64 : type==='ring' ? 44 : r),
       type: type,
       rot: (Math.random() * 2 - 1) * 0.3,
       vr: (Math.random() * 2 - 1) * 0.6,
