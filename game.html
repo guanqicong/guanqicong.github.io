@@ -279,7 +279,7 @@ groomSheet: "data:image/webp;base64,UklGRjoXBABXRUJQVlA4WAoAAAAQAAAAeQ0AvwMAQUxQ
   }
 
   let loadedCount = 0;
-  const TOTAL_IMG = 7;
+  let TOTAL_IMG = 7;
 
   function init(){
     // 微信 X5 内核兼容
@@ -298,16 +298,16 @@ groomSheet: "data:image/webp;base64,UklGRjoXBABXRUJQVlA4WAoAAAAQAAAAeQ0AvwMAQUxQ
       catchAudio = new Audio(ASSETS.catchSound); catchAudio.volume = 0.8; catchAudio.preload = "auto";
     } catch(e) {}
 
-    // 并行加载所有图片（Promise.all 同时下载，大幅加速）
+    // 并行加载核心图片（背景图最重，改为后台流式加载，不阻塞进入游戏）
     var promises = [
       loadImage(ASSETS.brideSheet).then(function(img){ RES["bride"] = img; }),
       loadImage(ASSETS.groomSheet).then(function(img){ RES["groom"] = img; }),
       loadImage(ASSETS.heartRed).then(function(img){ RES["hr"] = img; }),
       loadImage(ASSETS.heartYellow).then(function(img){ RES["hy"] = img; }),
       loadImage(ASSETS.ring).then(function(img){ RES["ring"] = img; }),
-      loadImage(ASSETS.letter).then(function(img){ RES["letter"] = img; }),
-      loadImage(ASSETS.bg).then(function(img){ RES["bg"] = img; })
+      loadImage(ASSETS.letter).then(function(img){ RES["letter"] = img; })
     ];
+    TOTAL_IMG = 6;
 
     // 实时更新进度（任意一个完成就 +1）
     var done = 0;
@@ -319,14 +319,19 @@ groomSheet: "data:image/webp;base64,UklGRjoXBABXRUJQVlA4WAoAAAAQAAAAeQ0AvwMAQUxQ
       }).catch(function(){});
     });
 
-    // 预热规则视频：设 src + preload + 静音预播放（用户走到选角色时已在缓冲，切到规则页 0 黑屏）
+    // 背景图：后台流式加载，就绪后直接进缓存（不阻塞入口，进入游戏前通常已就绪）
+    loadImage(ASSETS.bg).then(function(img){ if(img){ RES.bg = img; buildBgCache(); } }).catch(function(){});
+
+    // 预热「开始」+「规则」视频：设 src + preload 静音预播，进入对应屏即秒播（不再黑屏等缓冲）
     try {
-      var vr = document.getElementById("vRules");
-      if (vr) {
-        vr.muted = true; vr.loop = true; vr.volume = 0; vr.preload = "auto";
-        if (!vr.src || vr.src.indexOf(ASSETS.rulesV) < 0) vr.src = ASSETS.rulesV;
-        vr.play().catch(function(){});
-      }
+      [["vRules", ASSETS.rulesV], ["vStart", ASSETS.startV]].forEach(function(pair){
+        var v = document.getElementById(pair[0]);
+        if (v) {
+          v.muted = true; v.loop = true; v.volume = 0; v.preload = "auto";
+          if (!v.src || v.src.indexOf(pair[1]) < 0) v.src = pair[1];
+          v.play().catch(function(){});
+        }
+      });
     } catch(e) {}
 
     return Promise.all(promises).catch(function(){}).then(function(){ finishLoading(); });
