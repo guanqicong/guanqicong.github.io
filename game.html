@@ -324,16 +324,29 @@ groomSheet: "data:image/webp;base64,UklGRjoXBABXRUJQVlA4WAoAAAAQAAAAeQ0AvwMAQUxQ
     });
 
     // 背景图：后台流式加载，就绪后直接进缓存（不阻塞入口，进入游戏前通常已就绪）
-    loadImage(ASSETS.bg).then(function(img){ if(img){ RES.bg = img; } }).catch(function(){});
+    // 背景图预取：用 XHR 提前下载，图片对象就绪后存入缓存
+    // 不阻塞 finishLoading，但保证进游戏时背景图大概率已加载完毕
+    (function(){
+      var xhr = new XMLHttpRequest();
+      xhr.open("GET", ASSETS.bg, true);
+      xhr.responseType = "blob";
+      xhr.onload = function(){
+        if(this.status === 200 && RES.bg === undefined){
+          var url = URL.createObjectURL(this.response);
+          var img = new Image();
+          img.onload = function(){ RES.bg = img; URL.revokeObjectURL(url); };
+          img.src = url;
+        }
+      };
+      xhr.send();
+    })();
 
-    // 预热所有视频：设 src + preload 静音预播，切到任何屏都秒播（不再黑屏等缓冲）
+    // 预热视频：只预热开始屏+选择屏两个视频（省带宽，不卡首屏）
+    // 其他视频在 show() 里按屏加载，不占首屏带宽
     try {
       [
         ["vStart",  ASSETS.startV],
-        ["vSelect", ASSETS.selectV],
-        ["vRules",  ASSETS.rulesV],
-        ["vMap",    ASSETS.mapV],
-        ["vThanks", ASSETS.thanksV]
+        ["vSelect", ASSETS.selectV]
       ].forEach(function(pair){
         var v = document.getElementById(pair[0]);
         if (v) {
@@ -741,36 +754,19 @@ groomSheet: "data:image/webp;base64,UklGRjoXBABXRUJQVlA4WAoAAAAQAAAAeQ0AvwMAQUxQ
 
     // 背景（直接绘制 + 平滑缩放，恢复此前顺畅观感）
     ctx.imageSmoothingEnabled = true;
-    if(RES.bg) ctx.drawImage(RES.bg, 0, 0, LOGIC_W, LOGIC_H);
-    ctx.imageSmoothingEnabled = false;
-
-    // 顶部积分 HUD
-    drawScoreHud(ctx);
-
-    // 爱心
-    for(const h of game.hearts){
-      var img;
-      if(h.type === 'red'){ img = RES.hr; }
-      else if(h.type === 'yellow'){ img = RES.hy; }
-      else if(h.type === 'ring'){ img = RES.ring; }
-      else if(h.type === 'letter'){ img = RES.letter; }
-      if(!img) continue;
-      ctx.save();
-      ctx.translate(h.x, h.y);
-      ctx.rotate(h.rot);
-      var hw2 = h.hw || h.r, hh2 = h.hh || h.r;
-      ctx.drawImage(img, -hw2, -hh2, hw2 * 2, hh2 * 2);
-      ctx.restore();
+    // 背景：图片就绪则绘制，否者画婚礼红色渐变底色（避免旧帧透出）
+    if(RES.bg) {
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(RES.bg, 0, 0, LOGIC_W, LOGIC_H);
+      ctx.imageSmoothingEnabled = false;
+    } else {
+      var grad = ctx.createLinearGradient(0, 0, 0, LOGIC_H);
+      grad.addColorStop(0, "#3f0a12");
+      grad.addColorStop(0.48, "#70152a");
+      grad.addColorStop(1, "#9c2036");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, LOGIC_W, LOGIC_H);
     }
-  }
-
-  function render(){
-    const ctx = game.ctx;
-    ctx.clearRect(0, 0, LOGIC_W, LOGIC_H);
-
-    // 背景（直接绘制 + 平滑缩放，恢复此前顺畅观感）
-    ctx.imageSmoothingEnabled = true;
-    if(RES.bg) ctx.drawImage(RES.bg, 0, 0, LOGIC_W, LOGIC_H);
     ctx.imageSmoothingEnabled = false;
 
     // 顶部积分 HUD
