@@ -13,10 +13,11 @@
     width:100vw; height:100vh;
     max-width:56.25vh; max-height:177.78vw;
   }
-  .screen { position:absolute; top:0; left:0; right:0; bottom:0; display:none; }
+  .screen { position:absolute; top:0; left:0; right:0; bottom:0; display:none; z-index:10; }
   .screen.active { display:block; }
   video { position:absolute; top:0; left:0; right:0; bottom:0; width:100%; height:100%; object-fit:cover; background:#000; }
-  #gameCanvas { position:absolute; top:0; left:0; right:0; bottom:0; width:100%; height:100%; }
+  #gameCanvas { position:absolute; top:0; left:0; right:0; bottom:0; width:100%; height:100%; display:none; }
+#gameCanvas.active { display:block; }
   #startArea, #groomBtn, #brideBtn, #mapArea, #joinBtn, #mustBtn, #backBtn, #rulesBtn {
     position:absolute; cursor:pointer; background:transparent; border:none;
   }
@@ -363,6 +364,10 @@ groomSheet: "data:image/webp;base64,UklGRjoXBABXRUJQVlA4WAoAAAAQAAAAeQ0AvwMAQUxQ
   function show(name){
     document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
     document.getElementById(name).classList.add("active");
+    var gc=document.getElementById("gameCanvas");
+    if(gc){ if(name==="game")gc.classList.add("active");else gc.classList.remove("active"); }
+    var gc = document.getElementById("gameCanvas");
+    if(gc){ if(name==="game") gc.classList.add("active"); else gc.classList.remove("active"); }
     // 关闭所有视频
     ["vStart","vSelect","vMap","vThanks","vRules"].forEach(id=>{ pauseVid(id); });
     // 仅播放当前屏视频
