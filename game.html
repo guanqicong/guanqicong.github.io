@@ -406,10 +406,15 @@ groomSheet: "data:image/webp;base64,UklGRjoXBABXRUJQVlA4WAoAAAAQAAAAeQ0AvwMAQUxQ
   }
 
   function show(name){
-    // 切到非 game 屏时强制停 rAF + 清 canvas（防止 loop 残留导致画面"乱跳"）
+    // 切到非 game 屏时：强制停 rAF + 立即隐藏 canvas
     if(name !== "game"){
-      if(window.game && game._raf){ cancelAnimationFrame(game._raf); game._raf = null; }
-      if(window.game){ game.running = false; }
+      if(game._raf){ cancelAnimationFrame(game._raf); game._raf = null; }
+      game.running = false;
+      // 显式隐藏 canvas（display:none + remove active，双保险）
+      var gc = document.getElementById("gameCanvas");
+      if(gc){ gc.style.display="none"; gc.classList.remove("active"); }
+      var gx = game.ctx;
+      if(gx) gx.clearRect(0, 0, LOGIC_W, LOGIC_H);
     }
     document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
     document.getElementById(name).classList.add("active");
@@ -879,37 +884,36 @@ groomSheet: "data:image/webp;base64,UklGRjoXBABXRUJQVlA4WAoAAAAQAAAAeQ0AvwMAQUxQ
 
   // ===== 游戏结束弹层 =====
   function showGameOver(reason){
-    // 立即停掉游戏 rAF 和 canvas 渲染（修复"画面乱跳"bug）
+    // 彻底停止游戏循环
     if(game._raf){ cancelAnimationFrame(game._raf); game._raf = null; }
     game.running = false;
-    // 清空 canvas，防止残留
-    const _gc = game.canvas, _gx = game.ctx;
-    if(_gc && _gx){ _gx.clearRect(0, 0, LOGIC_W, LOGIC_H); }
+    // 立即隐藏 canvas（最保险）
+    var _gc = document.getElementById("gameCanvas");
+    var _gx = game.ctx;
+    if(_gc){ _gc.style.display="none"; _gc.classList.remove("active"); }
+    if(_gx){ _gx.clearRect(0, 0, LOGIC_W, LOGIC_H); }
+    // 移除旧残留 layer（防止多次调用堆积）
+    var _old = document.getElementById("lbInputLayer");
+    if(_old) _old.remove();
     playBgm();
     var isNeg = (reason === "neg");
     var title = isNeg ? "游戏结束" : "收到请柬！";
     var sub = isNeg ? "分数变负了，重新挑战！" : "婚礼请柬已送达！";
     var scoreColor = game.score < 0 ? "#FF4444" : (game.score >= 50 ? "#00FF88" : "#FFE680");
 
-    // 计算舞台实际渲染尺寸，用于同步缩放
+    // 用 fixed top:0 left:0，不依赖 stage offset（避免 translateZ(0) 破坏 fixed 参照）
     var stageEl = document.getElementById("stage");
     var sRect = stageEl.getBoundingClientRect();
-    // stage 的 CSS 逻辑宽度是 LOGIC_W=720，对应渲染 sRect.width
     var scale = sRect.width / 720;
 
-    // 舞台在屏幕上的偏移（舞台可能不在 0,0）
-    var stageTop = sRect.top;
-    var stageLeft = sRect.left;
-
-    // 覆盖层：100% 舞台尺寸（承接 transform 缩放）
     var layer = document.createElement("div");
     layer.id = "lbInputLayer";
     layer.style.cssText = [
       "position:fixed",
-      "top:" + stageTop + "px",
-      "left:" + stageLeft + "px",
-      "width:720px",
-      "height:1280px",
+      "top:0",
+      "left:0",
+      "width:100%",
+      "height:100%",
       "transform:scale(" + scale + ")",
       "transform-origin:top left",
       "background:rgba(0,0,0,.92)",
@@ -1016,10 +1020,10 @@ groomSheet: "data:image/webp;base64,UklGRjoXBABXRUJQVlA4WAoAAAAQAAAAeQ0AvwMAQUxQ
     joinBtn.addEventListener("click", function(e){
       e.stopPropagation(); e.preventDefault();
       playBtnSound();
+      // 同步：立即移除 layer + 立即切屏（无延迟，防止事件穿透）
       var l = document.getElementById("lbInputLayer");
-      if(l){ l.style.pointerEvents="none"; l.remove(); }
-      // 延迟切屏，避免触摸事件穿透到下面地图屏按钮
-      setTimeout(function(){ show("map"); }, 80);
+      if(l) l.remove();
+      show("map");
     });
     btnArea.appendChild(joinBtn);
 
@@ -1038,8 +1042,8 @@ groomSheet: "data:image/webp;base64,UklGRjoXBABXRUJQVlA4WAoAAAAQAAAAeQ0AvwMAQUxQ
       e.stopPropagation(); e.preventDefault();
       playBtnSound();
       var l = document.getElementById("lbInputLayer");
-      if(l){ l.style.pointerEvents="none"; l.remove(); }
-      setTimeout(function(){ show("select"); }, 80);
+      if(l) l.remove();
+      show("select");
     });
     var lbBtn = document.createElement("button");
     lbBtn.id = "goLeaderBtn";
