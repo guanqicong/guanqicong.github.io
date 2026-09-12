@@ -772,13 +772,18 @@ groomSheet: "data:image/webp;base64,UklGRjoXBABXRUJQVlA4WAoAAAAQAAAAeQ0AvwMAQUxQ
 
   function render(){
     const ctx = game.ctx;
-    ctx.clearRect(0, 0, LOGIC_W, LOGIC_H);
-
-    // 背景（直接绘制 + 平滑缩放，恢复此前顺畅观感）
     ctx.imageSmoothingEnabled = true;
-    // 背景改由 CSS #stage background-image 负责（GPU加速，不吃CPU）
-    // canvas 只清透明（clearRect），爱心和角色画在上面
-    ctx.clearRect(0, 0, LOGIC_W, LOGIC_H);
+    // 背景：直接画在 canvas 上（修复黑屏 bug——canvas 不透明会盖住 CSS 背景）
+    if(RES && RES.bg){
+      ctx.drawImage(RES.bg, 0, 0, LOGIC_W, LOGIC_H);
+    } else {
+      // 背景未就绪前用渐变占位，避免闪黑
+      const grad = ctx.createLinearGradient(0, 0, 0, LOGIC_H);
+      grad.addColorStop(0, "#fce4ec");
+      grad.addColorStop(1, "#f8bbd0");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, LOGIC_W, LOGIC_H);
+    }
     ctx.imageSmoothingEnabled = false;
 
     // 顶部积分 HUD
