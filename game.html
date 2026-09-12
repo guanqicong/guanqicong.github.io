@@ -1013,11 +1013,13 @@ groomSheet: "data:image/webp;base64,UklGRjoXBABXRUJQVlA4WAoAAAAQAAAAeQ0AvwMAQUxQ
       "border-radius:12px","font-weight:bold"
     ].join(";");
     joinBtn.innerHTML = "&#x2764; 参与婚礼";
-    joinBtn.addEventListener("click", function(){
+    joinBtn.addEventListener("click", function(e){
+      e.stopPropagation(); e.preventDefault();
       playBtnSound();
       var l = document.getElementById("lbInputLayer");
-      if(l) l.remove();
-      show("map");
+      if(l){ l.style.pointerEvents="none"; l.remove(); }
+      // 延迟切屏，避免触摸事件穿透到下面地图屏按钮
+      setTimeout(function(){ show("map"); }, 80);
     });
     btnArea.appendChild(joinBtn);
 
@@ -1032,11 +1034,12 @@ groomSheet: "data:image/webp;base64,UklGRjoXBABXRUJQVlA4WAoAAAAQAAAAeQ0AvwMAQUxQ
       "border:2px solid #FFD700","border-radius:12px","font-weight:bold"
     ].join(";");
     rpBtn.innerHTML = "&#x1F504; 再玩一次";
-    rpBtn.addEventListener("click", function(){
+    rpBtn.addEventListener("click", function(e){
+      e.stopPropagation(); e.preventDefault();
       playBtnSound();
       var l = document.getElementById("lbInputLayer");
-      if(l) l.remove();
-      show("select");
+      if(l){ l.style.pointerEvents="none"; l.remove(); }
+      setTimeout(function(){ show("select"); }, 80);
     });
     var lbBtn = document.createElement("button");
     lbBtn.id = "goLeaderBtn";
@@ -1046,7 +1049,8 @@ groomSheet: "data:image/webp;base64,UklGRjoXBABXRUJQVlA4WAoAAAAQAAAAeQ0AvwMAQUxQ
       "border:2px solid #FFD700","border-radius:12px","font-weight:bold"
     ].join(";");
     lbBtn.innerHTML = "&#x1F3C6; 查看排行榜";
-    lbBtn.addEventListener("click", function(){
+    lbBtn.addEventListener("click", function(e){
+      e.stopPropagation(); e.preventDefault();
       playBtnSound();
       showLeaderboardModal();
     });
@@ -1057,7 +1061,8 @@ groomSheet: "data:image/webp;base64,UklGRjoXBABXRUJQVlA4WAoAAAAQAAAAeQ0AvwMAQUxQ
     card.appendChild(btnArea);
 
     // 上传按钮事件
-    btn.addEventListener("click", function(){
+    btn.addEventListener("click", function(e){
+      e.stopPropagation(); e.preventDefault();
       playBtnSound();
       var name = inp.value.trim();
       if(!name){ alert("请输入名字！"); inp.focus(); return; }
@@ -1065,7 +1070,8 @@ groomSheet: "data:image/webp;base64,UklGRjoXBABXRUJQVlA4WAoAAAAQAAAAeQ0AvwMAQUxQ
     });
 
     layer.appendChild(card);
-    stageEl.appendChild(layer);
+    // 挂到 body 而非 stage，避免 stage 的 transform translateZ(0) 让 fixed 失效
+    document.body.appendChild(layer);
 
     fetchLB();
   }
@@ -1169,12 +1175,12 @@ function showLeaderboardModal(){
     var refreshBtn = document.createElement("button");
     refreshBtn.style.cssText = "margin-top:16px;padding:14px 40px;font-size:32px;background:#fff;color:#8b0000;border:2px solid #FFD700;border-radius:10px;font-weight:bold;margin-right:12px;";
     refreshBtn.innerHTML = "&#x1F504; 刷新积分榜";
-    refreshBtn.addEventListener("click", function(){ playBtnSound(); fetchLB(); });
+    refreshBtn.addEventListener("click", function(e){ e.stopPropagation(); playBtnSound(); fetchLB(); });
     var closeBtn = document.createElement("button");
     closeBtn.id = "lbModalClose";
     closeBtn.style.cssText = "margin-top:16px;padding:14px 60px;font-size:36px;background:#FFD700;color:#8b0000;border:none;border-radius:10px;font-weight:bold;";
     closeBtn.textContent = "关闭";
-    closeBtn.addEventListener("click", function(){ var m = document.getElementById("lbModal"); if(m) m.remove(); });
+    closeBtn.addEventListener("click", function(e){ e.stopPropagation(); var m = document.getElementById("lbModal"); if(m) m.remove(); });
     var btnRow = document.createElement("div");
     btnRow.style.cssText = "display:flex;gap:12px;margin-top:16px;";
     btnRow.appendChild(refreshBtn);
