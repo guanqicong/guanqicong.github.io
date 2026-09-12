@@ -1158,7 +1158,7 @@ function showLeaderboardModal(){
     layer.appendChild(btnRow);
     stageEl.appendChild(layer);
     var data = FAKE_LB.slice();
-    function render(arr){
+    function renderLb(arr){
       arr.sort(function(a,b){ return b.score - a.score; });
       var html = "";
       for(var k=0;k<arr.length;k++){
@@ -1174,7 +1174,7 @@ function showLeaderboardModal(){
       }
       list.innerHTML = html;
     }
-    render(data);
+    renderLb(data);
     try {
       var x = new XMLHttpRequest();
       x.open("GET","https://api.github.com/repos/guanqicong/guanqicong.github.io/issues?state=open&per_page=100",true);
@@ -1196,7 +1196,7 @@ function showLeaderboardModal(){
           }
           modalMerged.sort(function(a,b){ return b.score - a.score; });
           var top10 = modalMerged.slice(0,10);
-          render(top10);
+          renderLb(top10);
         } catch(e){}
       };
       x.send();
