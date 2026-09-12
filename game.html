@@ -655,7 +655,15 @@ groomSheet: "data:image/webp;base64,UklGRjoXBABXRUJQVlA4WAoAAAAQAAAAeQ0AvwMAQUxQ
     game._raf = requestAnimationFrame(loop);
     const dt = Math.min((now - game.lastT) / 1000, 0.05);
     game.lastT = now;
-    if(!game.running) return;
+    if(!game.running){
+      // 游戏停止时彻底停掉 rAF，避免无谓调度
+      cancelAnimationFrame(game._raf);
+      game._raf = null;
+      // 清空 canvas，防止残留画面"乱跳"
+      const _gc = game.canvas, _gx = game.ctx;
+      if(_gc && _gx){ _gx.clearRect(0, 0, LOGIC_W, LOGIC_H); }
+      return;
+    }
     update(dt);
     render();
   }
@@ -866,6 +874,12 @@ groomSheet: "data:image/webp;base64,UklGRjoXBABXRUJQVlA4WAoAAAAQAAAAeQ0AvwMAQUxQ
 
   // ===== 游戏结束弹层 =====
   function showGameOver(reason){
+    // 立即停掉游戏 rAF 和 canvas 渲染（修复"画面乱跳"bug）
+    if(game._raf){ cancelAnimationFrame(game._raf); game._raf = null; }
+    game.running = false;
+    // 清空 canvas，防止残留
+    const _gc = game.canvas, _gx = game.ctx;
+    if(_gc && _gx){ _gx.clearRect(0, 0, LOGIC_W, LOGIC_H); }
     playBgm();
     var isNeg = (reason === "neg");
     var title = isNeg ? "游戏结束" : "收到请柬！";
