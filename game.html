@@ -324,17 +324,23 @@ groomSheet: "data:image/webp;base64,UklGRjoXBABXRUJQVlA4WAoAAAAQAAAAeQ0AvwMAQUxQ
     });
 
     // 背景图：后台流式加载，就绪后直接进缓存（不阻塞入口，进入游戏前通常已就绪）
-    // 背景图预取：用 XHR 提前下载，图片对象就绪后存入缓存
-    // 不阻塞 finishLoading，但保证进游戏时背景图大概率已加载完毕
+    // 背景图预取：用 XHR 提前下载，加载完同时：1)存RES.bg备canvas用 2)设CSS背景
+    // CSS background-image 由 GPU 渲染，不吃 CPU，完美解决缩放卡顿
     (function(){
       var xhr = new XMLHttpRequest();
       xhr.open("GET", ASSETS.bg, true);
       xhr.responseType = "blob";
       xhr.onload = function(){
-        if(this.status === 200 && RES.bg === undefined){
+        if(this.status === 200){
           var url = URL.createObjectURL(this.response);
           var img = new Image();
-          img.onload = function(){ RES.bg = img; URL.revokeObjectURL(url); };
+          img.onload = function(){
+            RES.bg = img;
+            // 动态设 CSS 背景（GPU加速，不卡帧率）
+            var stageEl = document.getElementById("stage");
+            if(stageEl) stageEl.style.backgroundImage = "url('" + img.src + "')";
+            URL.revokeObjectURL(url);
+          };
           img.src = url;
         }
       };
@@ -754,19 +760,9 @@ groomSheet: "data:image/webp;base64,UklGRjoXBABXRUJQVlA4WAoAAAAQAAAAeQ0AvwMAQUxQ
 
     // 背景（直接绘制 + 平滑缩放，恢复此前顺畅观感）
     ctx.imageSmoothingEnabled = true;
-    // 背景：图片就绪则绘制，否者画婚礼红色渐变底色（避免旧帧透出）
-    if(RES.bg) {
-      ctx.imageSmoothingEnabled = true;
-      ctx.drawImage(RES.bg, 0, 0, LOGIC_W, LOGIC_H);
-      ctx.imageSmoothingEnabled = false;
-    } else {
-      var grad = ctx.createLinearGradient(0, 0, 0, LOGIC_H);
-      grad.addColorStop(0, "#3f0a12");
-      grad.addColorStop(0.48, "#70152a");
-      grad.addColorStop(1, "#9c2036");
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, LOGIC_W, LOGIC_H);
-    }
+    // 背景改由 CSS #stage background-image 负责（GPU加速，不吃CPU）
+    // canvas 只清透明（clearRect），爱心和角色画在上面
+    ctx.clearRect(0, 0, LOGIC_W, LOGIC_H);
     ctx.imageSmoothingEnabled = false;
 
     // 顶部积分 HUD
