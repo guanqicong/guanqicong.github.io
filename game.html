@@ -406,6 +406,11 @@ groomSheet: "data:image/webp;base64,UklGRjoXBABXRUJQVlA4WAoAAAAQAAAAeQ0AvwMAQUxQ
   }
 
   function show(name){
+    // 切到非 game 屏时强制停 rAF + 清 canvas（防止 loop 残留导致画面"乱跳"）
+    if(name !== "game"){
+      if(window.game && game._raf){ cancelAnimationFrame(game._raf); game._raf = null; }
+      if(window.game){ game.running = false; }
+    }
     document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
     document.getElementById(name).classList.add("active");
     var gc=document.getElementById("gameCanvas");
