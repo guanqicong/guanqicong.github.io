@@ -193,7 +193,7 @@ button{font-family:inherit;}
 /* ══ 常量 ══════════════════════════════════════════════ */
 var LOGIC_W = 720, LOGIC_H = 1280;   // 逻辑画布尺寸
 var SPR_W = 345, SPR_H = 480;        // 精灵图实际帧尺寸（3450÷10 帧=345, 960÷2 行=480，上行 10 帧）
-var SPR_SCALE = 0.4;                 // 角色绘制倍率（缩小版：约为上一版的 1/2）
+var SPR_SCALE = 0.52;                // 角色绘制倍率（放大 30%：0.4 × 1.3）
 var DRAW_W = SPR_W * SPR_SCALE;      // 角色绘制宽度 138
 var DRAW_H = SPR_H * SPR_SCALE;      // 角色绘制高度 192
 var FEET_SRC_Y = 460;                // 角色脚底在源帧内的 Y（脚踩地面用）
@@ -409,10 +409,10 @@ function bindInput(){
 /* ══ 掉落物 ═════════════════════════════════════════════ */
 function spawnHeart(){
   var r=Math.random(), type, hw, hh, score, speed, r2;
-  if(r < 0.45){ type='red';    hw=52; hh=52; score=10;  speed=240; r2=48; }   // 红心 45%
-  else if(r < 0.75){ type='yellow'; hw=52; hh=52; score=-20; speed=420; r2=48; } // 黄心 30%
-  else if(r < 0.83){ type='ring';   hw=50; hh=50; score=50;  speed=240; r2=42; } // 戒指 8%（原图 512×512 正方形，正常比例）
-  else {              type='letter'; hw=136;hh=77; score=0;   speed=420; r2=64; } // 请柬 17%
+  if(r < 0.40){ type='red';    hw=52; hh=52; score=10;  speed=240; r2=48; }   // 红心 40%
+  else if(r < 0.66){ type='yellow'; hw=52; hh=52; score=-20; speed=420; r2=48; } // 黄心 26%
+  else if(r < 0.74){ type='ring';   hw=50; hh=50; score=50;  speed=240; r2=42; } // 戒指 8%（原图 512×512 正方形，正常比例）
+  else {              type='letter'; hw=136;hh=77; score=0;   speed=420; r2=64; } // 请柬 26%（难度加大）
   G.hearts.push({
     type:type, x:hw+Math.random()*(LOGIC_W-2*hw), y:-hh,
     hw:hw, hh:hh, speed:speed, r2:r2
@@ -563,7 +563,10 @@ function loadLeaderboard(cid){
     list.forEach(function(issue){
       if(!issue || !issue.title) return;
       var m=/^\[LB\]\s*(.+?)\s+(\d+)\s*$/.exec(issue.title);
-      if(m) rows.push({name:m[1].trim(), score:parseInt(m[2],10)});
+      if(!m) return;
+      var nm=m[1].trim();
+      if(!/[\u4e00-\u9fa5]/.test(nm)) return;   // 过滤乱码/非中文名条目（如 ??? 重复假数据），保证榜单真实不重复
+      rows.push({name:nm, score:parseInt(m[2],10)});
     });
     rows.sort(function(a,b){ return b.score-a.score; });
     rows=rows.slice(0,10);
