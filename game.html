@@ -102,26 +102,26 @@ button{font-family:inherit;}
 <div id="stage">
   <!-- 1. 开始页 -->
   <div id="start" class="screen active">
-    <video id="vStart" preload="none" loop muted playsinline webkit-playsinline
+    <video id="vStart" preload="auto" loop muted playsinline webkit-playsinline
       x5-playsinline x5-video-player-type="h5" x5-video-player-fullscreen="false"
-      poster="assets/poster_start.jpg"></video>
+      ></video>
     <button id="startArea" class="win-btn" aria-label="开始游戏"></button>
   </div>
 
   <!-- 2. 角色选择页 -->
   <div id="select" class="screen">
-    <video id="vSelect" preload="none" loop muted playsinline webkit-playsinline
+    <video id="vSelect" preload="auto" loop muted playsinline webkit-playsinline
       x5-playsinline x5-video-player-type="h5" x5-video-player-fullscreen="false"
-      poster="assets/poster_select.jpg"></video>
+      ></video>
     <button id="groomBtn" class="win-btn" aria-label="男方亲友"></button>
     <button id="brideBtn" class="win-btn" aria-label="女方亲友"></button>
   </div>
 
   <!-- 3. 规则视频页 -->
   <div id="rules" class="screen">
-    <video id="vRules" preload="none" muted playsinline webkit-playsinline
+    <video id="vRules" preload="auto" muted playsinline webkit-playsinline
       x5-playsinline x5-video-player-type="h5" x5-video-player-fullscreen="false"
-      poster="assets/poster_rules.jpg"></video>
+      ></video>
     <button id="rulesBtn" class="win-btn" aria-label="开始接爱心"></button>
   </div>
 
@@ -132,18 +132,18 @@ button{font-family:inherit;}
 
   <!-- 5. 地图页 -->
   <div id="map" class="screen">
-    <video id="vMap" preload="none" loop muted playsinline webkit-playsinline
+    <video id="vMap" preload="auto" loop muted playsinline webkit-playsinline
       x5-playsinline x5-video-player-type="h5" x5-video-player-fullscreen="false"
-      poster="assets/poster_map.jpg"></video>
+      ></video>
     <button id="mapArea" class="win-btn" aria-label="查看地图"></button>
     <button id="joinBtn" class="win-btn" aria-label="参加婚礼"></button>
   </div>
 
   <!-- 6. 感谢页 -->
   <div id="thanks" class="screen">
-    <video id="vThanks" preload="none" loop muted playsinline webkit-playsinline
+    <video id="vThanks" preload="auto" loop muted playsinline webkit-playsinline
       x5-playsinline x5-video-player-type="h5" x5-video-player-fullscreen="false"
-      poster="assets/poster_thanks.jpg"></video>
+      ></video>
   </div>
 </div>
 
@@ -342,6 +342,17 @@ function preloadAssets(){
   RES.hy    = new Image(); RES.hy.src    = q(U.hy);
   RES.ring  = new Image(); RES.ring.src  = q(U.ring);
   RES.letter= new Image(); RES.letter.src= q(U.letter);
+  // 全部画面视频一次性预载：切换秒播、不再出现静态封面图
+  Object.keys(VIDS).forEach(function(id){
+    var v=$(id);
+    if(!v) return;
+    v.preload='auto';
+    var full=q(VIDS[id]);
+    if(v.getAttribute('data-src')!==full){
+      v.src=full; v.setAttribute('data-src',full);
+    }
+    v.load();
+  });
 }
 var isBride = false;   // 新娘素材本身是横向镜像，翻转条件需反转
 function chooseChar(role){
@@ -722,10 +733,10 @@ function wechatFix(){
   });
   document.addEventListener('touchstart', function(){
     playBgm();   // 首次触摸 → 背景音乐从开始页就有（浏览器自动播放策略下的兜底）
-    ['vStart','vSelect','vRules','vMap','vThanks'].forEach(function(id){
-      var v=$(id);
-      if(v && v.getAttribute('data-src') && v.paused) v.play().catch(function(){});
-    });
+    // 只播当前画面的视频（其余后台预载不播，避免多个视频同时出声）
+    var cur=document.querySelector('.screen.active');
+    var v=cur ? cur.querySelector('video') : null;
+    if(v && v.getAttribute('data-src') && v.paused) v.play().catch(function(){});
   }, {passive:true});
 }
 
