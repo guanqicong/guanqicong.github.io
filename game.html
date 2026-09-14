@@ -95,9 +95,36 @@ button{font-family:inherit;}
   max-width:80vw;text-align:center;
 }
 #toast.show{opacity:1;}
+
+/* ══ 加载页（全部素材就绪后才进入游戏） ═══════════════ */
+#loading{position:fixed;left:0;top:0;width:100%;height:100%;z-index:250;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(180deg,#2b0a0a 0%,#4a1010 60%,#5c1512 100%);transition:opacity .5s;}
+#loading.hide{opacity:0;pointer-events:none;}
+.ld-box{width:76%;max-width:430px;text-align:center;color:#ffd9a0;}
+.ld-heart{font-size:44px;line-height:1;margin-bottom:14px;animation:ldbeat 1s ease-in-out infinite;}
+@keyframes ldbeat{0%,100%{transform:scale(1);}50%{transform:scale(1.18);}}
+.ld-title{font-size:30px;font-weight:700;color:#ffd700;letter-spacing:6px;margin-bottom:10px;
+  text-shadow:0 0 16px rgba(255,215,0,.45);}
+.ld-sub{font-size:15px;color:#e8b06a;margin-bottom:26px;letter-spacing:2px;}
+.ld-bar{height:12px;background:rgba(255,255,255,.16);border-radius:8px;overflow:hidden;}
+#ldFill{height:100%;width:0%;background:linear-gradient(90deg,#ffd700,#ff8c42);border-radius:8px;transition:width .3s;}
+.ld-pct{margin-top:12px;font-size:17px;color:#ffd700;font-weight:600;}
+.ld-tip{margin-top:20px;font-size:12px;color:rgba(255,217,160,.55);letter-spacing:1px;}
 </style>
 </head>
 <body>
+
+<!-- 加载页：全部图片/视频/音频就绪后才进入游戏 -->
+<div id="loading">
+  <div class="ld-box">
+    <div class="ld-heart">💍</div>
+    <div class="ld-title">婚礼接爱心</div>
+    <div class="ld-sub">正在筹备婚礼现场，请稍候…</div>
+    <div class="ld-bar"><div id="ldFill"></div></div>
+    <div class="ld-pct" id="ldPct">0%</div>
+    <div class="ld-tip">素材加载中，首次进入约需几秒</div>
+  </div>
+</div>
 
 <div id="stage">
   <!-- 1. 开始页 -->
@@ -335,28 +362,66 @@ function showScreen(name){
   }
 }
 
-/* ══ 图片资源预载 ═══════════════════════════════════════ */
-function preloadAssets(){
-  RES.bg    = new Image(); RES.bg.src    = q(U.bg);
-  RES.hr    = new Image(); RES.hr.src    = q(U.hr);
-  RES.hy    = new Image(); RES.hy.src    = q(U.hy);
-  RES.ring  = new Image(); RES.ring.src  = q(U.ring);
-  RES.letter= new Image(); RES.letter.src= q(U.letter);
-  // 全部画面视频一次性预载：切换秒播、不再出现静态封面图
-  Object.keys(VIDS).forEach(function(id){
-    var v=$(id);
-    if(!v) return;
-    v.preload='auto';
-    var full=q(VIDS[id]);
-    if(v.getAttribute('data-src')!==full){
-      v.src=full; v.setAttribute('data-src',full);
+/* ══ 全资源加载：图片/视频/音频全部就绪后才进入游戏 ═══ */
+var LOAD_TOTAL=0, LOAD_DONE=0;
+function loadAssets(onProgress, onDone){
+  var items=[];
+  var imgs={bg:U.bg, hr:U.hr, hy:U.hy, ring:U.ring, letter:U.letter, groom:U.groom, bride:U.bride};
+  Object.keys(imgs).forEach(function(k){ items.push({type:'img', key:k, src:q(imgs[k])}); });
+  Object.keys(VIDS).forEach(function(id){ items.push({type:'vid', key:id, src:q(VIDS[id])}); });
+  items.push({type:'aud', key:'bgm', el:'aBgm',  src:q(U.bgm)});
+  items.push({type:'aud', key:'btn', el:'aBtn',  src:q(U.btn)});
+  items.push({type:'aud', key:'cat', el:'aCatch',src:q(U.cat)});
+  LOAD_TOTAL=items.length; LOAD_DONE=0;
+  function tick(){
+    LOAD_DONE++;
+    if(typeof onProgress==='function') onProgress(LOAD_DONE, LOAD_TOTAL);
+    if(LOAD_DONE>=LOAD_TOTAL && typeof onDone==='function') onDone();
+  }
+  function once(fn){ var d=false; return function(){ if(d) return; d=true; fn(); }; }
+  items.forEach(function(it){
+    if(it.type==='img'){
+      var im=new Image();
+      im.onload=tick; im.onerror=tick; im.src=it.src;
+      if(it.key==='bg') RES.bg=im;
+      else if(it.key==='hr') RES.hr=im;
+      else if(it.key==='hy') RES.hy=im;
+      else if(it.key==='ring') RES.ring=im;
+      else if(it.key==='letter') RES.letter=im;
+      else if(it.key==='groom'){ charImg=im; }
+      // bride 只用于计数，选中新娘时再引用
+    }else if(it.type==='vid'){
+      var v=$(it.key);
+      if(!v){ tick(); return; }
+      v.preload='auto';
+      if(v.getAttribute('data-src')!==it.src){ v.src=it.src; v.setAttribute('data-src',it.src); }
+      var ok=once(tick);
+      v.addEventListener('canplaythrough', ok);
+      if(v.readyState>=3) ok();
+      v.load();
+      setTimeout(ok, 10000);   // 弱网兜底：10 秒未就绪也算完成，不阻塞进入
+    }else if(it.type==='aud'){
+      var a=$(it.el);
+      if(!a){ tick(); return; }
+      var ok2=once(tick);
+      a.preload='auto';
+      if(a.getAttribute('data-src')!==it.src){ a.src=it.src; a.setAttribute('data-src',it.src); }
+      a.addEventListener('canplaythrough', ok2);
+      if(a.readyState>=3) ok2();
+      a.load();
+      setTimeout(ok2, 10000);
     }
-    v.load();
   });
-  // 规则视频播完停回首帧：下次进入直接从头播，无需 seek（避免首帧卡）
-  var rv=$('vRules');
-  if(rv) rv.addEventListener('ended', function(){ try{ rv.currentTime=0; }catch(e){} });
+  if(items.length===0) onDone();
 }
+function updateLoadPct(done, total){
+  var pct=total ? Math.min(100, Math.round(done/total*100)) : 0;
+  var f=$('ldFill'); if(f) f.style.width=pct+'%';
+  var p=$('ldPct');  if(p) p.textContent=pct+'%';
+}
+/* 规则视频播完停回首帧：下次进入直接从头播，无需 seek */
+var rv=$('vRules');
+if(rv) rv.addEventListener('ended', function(){ try{ rv.currentTime=0; }catch(e){} });
 var isBride = false;   // 新娘素材本身是横向镜像，翻转条件需反转
 function chooseChar(role){
   isBride = (role !== 'groom');
@@ -743,18 +808,27 @@ function wechatFix(){
   }, {passive:true});
 }
 
-/* ══ 初始化 ═════════════════════════════════════════════ */
+/* ══ 初始化：先加载全部素材，就绪后进入开始页 ═══════ */
 function init(){
   fitStage();
   window.addEventListener('resize', fitStage);
   window.addEventListener('orientationchange', function(){ setTimeout(fitStage,200); });
-  preloadAssets();
-  try{ setTimeout(function(){ playBgm(); }, 150); }catch(e){}   // 加载完成即尝试播放（开始页就有音乐）
-  chooseChar('groom');      // 默认角色，避免未选择时进入游戏
   bindInput();
   bindButtons();
   wechatFix();
-  showScreen('start');
+  var entered=false;
+  function enter(){
+    if(entered) return; entered=true;
+    var l=$('loading'); if(l) l.classList.add('hide');
+    setTimeout(function(){ if(l) l.style.display='none'; }, 600);
+    showScreen('start');
+    try{ setTimeout(function(){ playBgm(); }, 200); }catch(e){}   // 开始页就有音乐
+  }
+  var forceTimer=setTimeout(enter, 20000);   // 20 秒兜底：弱网也能进游戏
+  loadAssets(function(done,total){
+    updateLoadPct(done,total);
+    if(done>=total){ clearTimeout(forceTimer); setTimeout(enter, 350); }
+  }, function(){});
 }
 if(document.readyState==='loading'){
   document.addEventListener('DOMContentLoaded', init);
