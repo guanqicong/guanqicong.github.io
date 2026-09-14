@@ -229,8 +229,7 @@ var G = {
   canvas:null, ctx:null, running:false,
   _raf:null, lastT:0,
   score:0, hearts:[],
-  charX:360, charDir:1,
-  moving:false, tapTarget:360, holdFlag:false,
+  charX:360, charDir:1, moving:false,
   bob:0, frame:0, ftimer:0, spawnT:0.3
 };
 var charImg = null;   // 当前角色 Image
@@ -339,7 +338,9 @@ function preloadAssets(){
   RES.ring  = new Image(); RES.ring.src  = q(U.ring);
   RES.letter= new Image(); RES.letter.src= q(U.letter);
 }
+var isBride = false;   // 新娘素材本身是横向镜像，翻转条件需反转
 function chooseChar(role){
+  isBride = (role !== 'groom');
   charImg = new Image();
   charImg.src = q(role==='groom' ? U.groom : U.bride);
 }
@@ -359,7 +360,6 @@ function startGame(){
   sizeCanvas();
   G.score=0; G.hearts=[];
   G.charX=LOGIC_W/2; G.charDir=1; G.moving=false;
-  G.holdFlag=false; G.tapTarget=G.charX; clearHold();
   G.bob=0; G.frame=0; G.ftimer=0; G.spawnT=0.3;
   G.lastT=0; G.running=true;
   playBgm();
@@ -367,27 +367,17 @@ function startGame(){
   G._raf=requestAnimationFrame(loop);
 }
 
-/* ══ 输入：左半屏左移、右半屏右移；点一下平滑滑一步，按住持续线性走 ══ */
-var MOVE_SPEED = 360;      // 线性移动速度（逻辑像素/秒），可调：越大走得越快
-var TAP_DIST = 52;         // 点一下的滑行距离（逻辑像素），可调：越大点一下走得越远
-var TAP_MS = 220;          // 按住超过此时长（毫秒）转为持续走，可调
-var holdTimer = null;
+/* ══ 输入：左半屏左移、右半屏右移；按住一直走，松手即停 ══ */
+var MOVE_SPEED = 360;      // 移动速度（逻辑像素/秒），可调：越大走得越快
 function clampX(x){ return Math.max(DRAW_W/2, Math.min(LOGIC_W-DRAW_W/2, x)); }
 function dirFromClientX(clientX){
   var rect=G.canvas.getBoundingClientRect();
   var x=(clientX-rect.left)/rect.width*LOGIC_W;
   return (x < LOGIC_W/2) ? -1 : 1;
 }
-function clearHold(){
-  if(holdTimer){ clearTimeout(holdTimer); holdTimer=null; }
-}
 function setDirFromPos(clientX){
   G.charDir = dirFromClientX(clientX);
-  G.tapTarget = clampX(G.charX + G.charDir * TAP_DIST);  // 先按"点一下"的距离线性滑行
-  G.holdFlag = false;
-  G.moving = true;
-  clearHold();
-  holdTimer = setTimeout(function(){ G.holdFlag = true; }, TAP_MS);  // 按住转持续走
+  G.moving = true;                 // 按住 → 开始向该方向匀速走
 }
 function bindInput(){
   var gameEl=$('game');
@@ -400,11 +390,10 @@ function bindInput(){
   gameEl.addEventListener('touchmove',function(e){
     if(!G.running) return; e.preventDefault();
     var t=e.touches[0];
-    G.charDir = dirFromClientX(t.clientX);
-    if(!G.holdFlag) G.tapTarget = clampX(G.charX + G.charDir * TAP_DIST);
+    G.charDir = dirFromClientX(t.clientX);   // 按住时跟随手指方向
   },{passive:false});
-  gameEl.addEventListener('touchend',function(){ if(G.running){ G.moving=false; clearHold(); } });
-  gameEl.addEventListener('touchcancel',function(){ if(G.running){ G.moving=false; clearHold(); } });
+  gameEl.addEventListener('touchend',function(){ if(G.running) G.moving=false; });
+  gameEl.addEventListener('touchcancel',function(){ if(G.running) G.moving=false; });
   gameEl.addEventListener('mousedown',function(e){
     if(!G.running) return;
     if(Date.now()-lastTouchT < 600) return;  // 触摸后的合成鼠标事件忽略，避免重复触发
@@ -412,19 +401,18 @@ function bindInput(){
   });
   window.addEventListener('mousemove',function(e){
     if(!G.running || !G.moving) return;
-    G.charDir = dirFromClientX(e.clientX);
-    if(!G.holdFlag) G.tapTarget = clampX(G.charX + G.charDir * TAP_DIST);
+    G.charDir = dirFromClientX(e.clientX);   // 按住拖动时跟随鼠标方向
   });
-  window.addEventListener('mouseup',function(){ if(G.running){ G.moving=false; clearHold(); } });
+  window.addEventListener('mouseup',function(){ if(G.running) G.moving=false; });
 }
 
 /* ══ 掉落物 ═════════════════════════════════════════════ */
 function spawnHeart(){
   var r=Math.random(), type, hw, hh, score, speed, r2;
-  if(r < 0.267){ type='red';    hw=52; hh=52; score=10;  speed=240; r2=48; }   // 红心 26.7%
-  else if(r < 0.717){ type='yellow'; hw=52; hh=52; score=-20; speed=420; r2=48; } // 黄心 45%
-  else if(r < 0.797){ type='ring';   hw=80; hh=44; score=50;  speed=240; r2=40; } // 戒指 8%
-  else {              type='letter'; hw=136;hh=77; score=0;   speed=420; r2=64; } // 请柬 20.3%
+  if(r < 0.45){ type='red';    hw=52; hh=52; score=10;  speed=240; r2=48; }   // 红心 45%
+  else if(r < 0.75){ type='yellow'; hw=52; hh=52; score=-20; speed=420; r2=48; } // 黄心 30%
+  else if(r < 0.83){ type='ring';   hw=50; hh=50; score=50;  speed=240; r2=42; } // 戒指 8%（原图 512×512 正方形，正常比例）
+  else {              type='letter'; hw=136;hh=77; score=0;   speed=420; r2=64; } // 请柬 17%
   G.hearts.push({
     type:type, x:hw+Math.random()*(LOGIC_W-2*hw), y:-hh,
     hw:hw, hh:hh, speed:speed, r2:r2
@@ -446,17 +434,9 @@ function collide(h){
 
 /* ══ 更新 ═══════════════════════════════════════════════ */
 function update(dt){
-  // 线性移动：点一下按 TAP_DIST 平滑滑行后停下；按住超过 TAP_MS 转为持续匀速走
+  // 线性移动：按住持续匀速走，松手即停
   if(G.moving){
-    var target = G.holdFlag ? (G.charDir < 0 ? 0 : LOGIC_W) : G.tapTarget;
-    var step = MOVE_SPEED * dt;
-    var d = target - G.charX;
-    if(Math.abs(d) <= step){
-      G.charX = target;
-      if(!G.holdFlag){ G.moving=false; clearHold(); }   // 点按滑行到位后停
-    } else {
-      G.charX += (d > 0 ? 1 : -1) * step;               // 匀速线性逼近目标
-    }
+    G.charX += G.charDir * MOVE_SPEED * dt;
     G.charX = clampX(G.charX);
   }
   // 走路动画：每 0.12s 切一帧（上行 10 帧循环）
@@ -505,7 +485,7 @@ function render(){
     var dx = G.charX - dw/2;
     var dy = GROUND_Y - FEET_SRC_Y*SPR_SCALE + Math.sin(G.bob)*4;
     ctx.save();
-    if(G.charDir < 0){          // 镜像翻转（translate+scale 后 dx 保持不变，见下）
+    if((G.charDir < 0) !== isBride){  // 镜像翻转：新郎朝左时翻；新娘素材默认朝向相反，条件反转
       ctx.translate(G.charX*2,0); ctx.scale(-1,1);
     }
     ctx.drawImage(charImg, sx,0,SPR_W,SPR_H, dx,dy,dw,dh);
@@ -534,7 +514,6 @@ function loop(now){
 /* ══ 游戏结束 ═══════════════════════════════════════════ */
 function doGameOver(reason){
   G.running=false;
-  clearHold();                            // 停止按住持续走的定时器
   if(G._raf){ cancelAnimationFrame(G._raf); G._raf=null; }
   if(G.ctx) G.ctx.clearRect(0,0,LOGIC_W,LOGIC_H);
   var gc=$('gameCanvas');
