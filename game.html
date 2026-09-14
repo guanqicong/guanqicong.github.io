@@ -199,7 +199,7 @@ var DRAW_H = SPR_H * SPR_SCALE;      // 角色绘制高度 192
 var FEET_SRC_Y = 460;                // 角色脚底在源帧内的 Y（脚踩地面用）
 var GROUND_Y = 1170;                 // 角色脚底 Y（逻辑坐标）
 var CHAR_CENTER_Y = GROUND_Y - (FEET_SRC_Y - 20) * SPR_SCALE / 2;  // 角色视觉中心 Y（用于碰撞检测）
-var TS = '20260914';                 // 缓存时间戳，改版时更新此值即可
+var TS = '20260915';                 // 缓存时间戳，改版时更新此值即可
 
 /* ══ 素材 URL（全部带时间戳防缓存） ════════════════════ */
 var U = {
@@ -221,7 +221,7 @@ var VIDS = {
   vMap:    'assets/map_v2.mp4',
   vThanks: 'assets/thanks_v2.mp4'
 };
-var NEXT = { start:'vSelect', select:'vRules', rules:null, map:'vThanks', thanks:'vStart' };
+var NEXT = { start:'vSelect', select:'vRules', rules:'vMap', map:'vThanks', thanks:'vStart' };
 function q(u){ return u + '?t=' + TS; }
 
 /* ══ 游戏状态 ═══════════════════════════════════════════ */
@@ -320,10 +320,7 @@ function showScreen(name){
   if(name==='start')  playOne('vStart',  VIDS.vStart);
   if(name==='select') playOne('vSelect', VIDS.vSelect);
   if(name==='rules')  playOne('vRules',  VIDS.vRules);
-  if(name==='map'){                           // 地图页：不播视频，显示静态海报，保持到点击"参加"
-    var mv=$('vMap');
-    if(mv){ mv.pause(); mv.removeAttribute('src'); mv.load(); }
-  }
+  if(name==='map')    playOne('vMap',    VIDS.vMap);   // 地图页：播专属单场景循环视频（map_v2.mp4 已裁剪为纯地图画面）
   if(name==='thanks') playOne('vThanks', VIDS.vThanks);
   preloadNext(name);                     // 后台静默 load 下一个视频
   // 5. 游戏屏
