@@ -226,7 +226,7 @@ var DRAW_H = SPR_H * SPR_SCALE;      // 角色绘制高度 192
 var FEET_SRC_Y = 460;                // 角色脚底在源帧内的 Y（脚踩地面用）
 var GROUND_Y = 1170;                 // 角色脚底 Y（逻辑坐标）
 var CHAR_CENTER_Y = GROUND_Y - (FEET_SRC_Y - 20) * SPR_SCALE / 2;  // 角色视觉中心 Y（用于碰撞检测）
-var TS = '20260916';                 // 缓存时间戳，改版时更新此值即可
+var TS = '20260917';                 // 缓存时间戳，改版时更新此值即可
 
 /* ══ 素材 URL（全部带时间戳防缓存） ════════════════════ */
 var U = {
@@ -396,10 +396,10 @@ function loadAssets(onProgress, onDone){
       v.preload='auto';
       if(v.getAttribute('data-src')!==it.src){ v.src=it.src; v.setAttribute('data-src',it.src); }
       var ok=once(tick);
-      v.addEventListener('canplaythrough', ok);
-      if(v.readyState>=3) ok();
+      v.addEventListener('loadeddata', ok);   // 首帧数据就绪即可播放，边播边缓冲
+      if(v.readyState>=2) ok();
       v.load();
-      setTimeout(ok, 10000);   // 弱网兜底：10 秒未就绪也算完成，不阻塞进入
+      setTimeout(ok, 8000);   // 弱网兜底：8 秒未就绪也算完成，不阻塞进入
     }else if(it.type==='aud'){
       var a=$(it.el);
       if(!a){ tick(); return; }
