@@ -221,7 +221,7 @@ var VIDS = {
   vMap:    'assets/map_v2.mp4',
   vThanks: 'assets/thanks_v2.mp4'
 };
-var NEXT = { start:'vSelect', select:'vRules', rules:'vMap', map:'vThanks', thanks:'vStart' };
+var NEXT = { start:'vSelect', select:'vRules', rules:null, map:'vThanks', thanks:'vStart' };
 function q(u){ return u + '?t=' + TS; }
 
 /* ══ 游戏状态 ═══════════════════════════════════════════ */
@@ -320,7 +320,10 @@ function showScreen(name){
   if(name==='start')  playOne('vStart',  VIDS.vStart);
   if(name==='select') playOne('vSelect', VIDS.vSelect);
   if(name==='rules')  playOne('vRules',  VIDS.vRules);
-  if(name==='map')    playOne('vMap',    VIDS.vMap);
+  if(name==='map'){                           // 地图页：不播视频，显示静态海报，保持到点击"参加"
+    var mv=$('vMap');
+    if(mv){ mv.pause(); mv.removeAttribute('src'); mv.load(); }
+  }
   if(name==='thanks') playOne('vThanks', VIDS.vThanks);
   preloadNext(name);                     // 后台静默 load 下一个视频
   // 5. 游戏屏
