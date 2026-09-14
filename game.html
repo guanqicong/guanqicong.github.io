@@ -469,9 +469,8 @@ function render(){
     var dx = G.charX - dw/2;
     var dy = GROUND_Y - FEET_SRC_Y*SPR_SCALE + Math.sin(G.bob)*4;
     ctx.save();
-    if(G.charDir < 0){          // 镜像翻转
+    if(G.charDir < 0){          // 镜像翻转（translate+scale 后 dx 保持不变，见下）
       ctx.translate(G.charX*2,0); ctx.scale(-1,1);
-      dx=-G.charX-dw/2;
     }
     ctx.drawImage(charImg, sx,0,SPR_W,SPR_H, dx,dy,dw,dh);
     ctx.restore();
@@ -517,11 +516,6 @@ function showGameOver(reason){
   btn.disabled=false; btn.textContent='上传分数';
   $('gameOverLayer').classList.add('show');
   loadLeaderboard('lbMiniList');
-  // 自动帮玩家上传成绩：2.5 秒后使用输入框里的名字（没填则用"宾客+数字"）
-  if(G.score >= 0){
-    clearTimeout(autoTimer);
-    autoTimer=setTimeout(function(){ autoUpload(); }, 2500);
-  }
 }
 function hideGameOver(){ $('gameOverLayer').classList.remove('show'); }
 
@@ -561,8 +555,7 @@ function loadLeaderboard(cid){
   })
   .catch(function(){ renderLB(FAKE, cid); });   // 网络异常 → 本地假数据
 }
-var autoTimer=null;   // 自动上传定时器
-function doUpload(name, isAuto){
+function doUpload(name){
   var btn=$('uploadBtn');
   if(btn.disabled) return;              // 已上传过，跳过
   btn.disabled=true; btn.textContent='上传中...';
@@ -584,7 +577,7 @@ function doUpload(name, isAuto){
       btn.disabled=true; btn.textContent='已上传';
       loadLeaderboard('lbMiniList');    // 实时刷新排行榜（先刷新，保证 toast 异常也不中断）
       loadLeaderboard('lbFullList');
-      showToast(isAuto ? '🎉 成绩已自动上传' : '🎉 上传成功！');
+      showToast('🎉 上传成功！');
     } else {
       btn.disabled=false; btn.textContent='上传分数';
       showToast('上传失败：'+(j&&j.message?j.message:'未知错误'));
@@ -595,21 +588,12 @@ function doUpload(name, isAuto){
     showToast('网络异常，上传失败，可稍后重试');
   });
 }
-function autoUpload(){
-  if(G.score < 0) return;
-  var inp=$('nameInput');
-  var name=inp.value.trim().replace(/[[\]<>]/g,'');
-  if(!name) name='宾客'+Math.floor(1000+Math.random()*9000);   // 未填名字用"宾客XXXX"
-  if(name.length>12) name=name.slice(0,12);
-  doUpload(name, true);
-}
 function uploadScore(){
   var inp=$('nameInput');
   var name=inp.value.trim().replace(/[[\]<>]/g,'');
   if(!name){ showToast('请先输入名字'); inp.focus(); return; }
   if(name.length>12) name=name.slice(0,12);
-  clearTimeout(autoTimer);              // 手动上传则取消自动上传
-  doUpload(name, false);
+  doUpload(name);
 }
 
 /* ══ Toast ══════════════════════════════════════════════ */
