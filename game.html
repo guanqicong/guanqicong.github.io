@@ -264,7 +264,11 @@ function playCatch(){
   try{ if(!aCatch.src) aCatch.src=q(U.cat); aCatch.currentTime=0; aCatch.play().catch(function(){}); }catch(e){}
 }
 function playBgm(){
-  try{ if(!aBgm.src) aBgm.src=q(U.bgm); aBgm.currentTime=0; aBgm.play().catch(function(){}); }catch(e){}
+  try{
+    if(aBgm.src && !aBgm.paused) return;   // 已在播 → 不打断重播
+    if(!aBgm.src) aBgm.src=q(U.bgm);
+    aBgm.currentTime=0; aBgm.play().catch(function(){});
+  }catch(e){}
 }
 function stopBgm(){ try{ aBgm.pause(); }catch(e){} }
 
@@ -316,9 +320,8 @@ function showScreen(name){
   // 3. 切换 .screen
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   $(name).classList.add('active');
-  // 4. 停所有视频，播当前屏
+  // 4. 停所有视频，播当前屏（背景音乐不打断，从开始页一直播）
   pauseAll();
-  stopBgm();
   if(name==='start')  playOne('vStart',  VIDS.vStart);
   if(name==='select') playOne('vSelect', VIDS.vSelect);
   if(name==='rules')  playOne('vRules',  VIDS.vRules);
@@ -363,13 +366,15 @@ function startGame(){
   G.score=0; G.hearts=[];
   G.charX=LOGIC_W/2; G.charDir=1; G.moving=false;
   G.bob=0; G.frame=0; G.ftimer=0; G.spawnT=0.3;
-  G.lastT=0; G.running=true; G.dragNow=false; G._lastX=undefined;
+  G.lastT=0; G.running=true; G.dragNow=false;
+  G.targetX=LOGIC_W/2; G._lastX=LOGIC_W/2;
   playBgm();
   if(G._raf) cancelAnimationFrame(G._raf);
   G._raf=requestAnimationFrame(loop);
 }
 
-/* ══ 输入：完全跟手——手指点到哪角色就到哪，拖动零延迟 ══ */
+/* ══ 输入：按下=线性走向目标点（不瞬移），拖动=完全跟手，松手=停 ══ */
+var MOVE_SPEED = 640;      // 线性走向目标点的速度（逻辑像素/秒），可调：越大走得越快
 function clampX(x){ return Math.max(DRAW_W/2, Math.min(LOGIC_W-DRAW_W/2, x)); }
 function pointerToCharX(clientX){
   var rect=G.canvas.getBoundingClientRect();
@@ -379,39 +384,42 @@ function pointerToCharX(clientX){
 function bindInput(){
   var gameEl=$('game');
   var lastTouchT=0;
-  function follow(clientX){
-    var nx=pointerToCharX(clientX);
-    var moved=Math.abs(nx-(G._lastX!==undefined?G._lastX:nx))>2;  // 手指实际移动才播放走路
-    G._lastX=nx;
-    if(moved){
-      if(nx>G.charX) G.charDir=1; else if(nx<G.charX) G.charDir=-1;
-      G.dragNow=true;
-      G.dragT=Date.now();            // 记录最后移动时刻，用于停住后自动站定
-    }else{
-      G.dragNow=false;               // 手指停住 → 角色站定
+  function onPress(clientX){           // 按下：记录目标点，角色线性走过去（不瞬移）
+    G.targetX = pointerToCharX(clientX);
+    G._lastX = G.targetX;
+    G.moving = true;
+  }
+  function onDrag(clientX){            // 拖动：完全跟手（手指动到哪角色到哪）
+    var nx = pointerToCharX(clientX);
+    if(Math.abs(nx - G._lastX) > 2){   // 手指真的动了才跟手
+      if(nx > G.charX) G.charDir = 1; else if(nx < G.charX) G.charDir = -1;
+      G.charX = nx;
+      G.targetX = nx;
+      G._lastX = nx;
+      G.dragNow = true;
+      G.dragT = Date.now();
     }
-    G.charX=nx;                      // 角色位置 = 手指位置（零延迟跟手）
-    G.moving=true;
+    G.moving = true;
   }
   gameEl.addEventListener('touchstart',function(e){
     if(!G.running) return; e.preventDefault();
     lastTouchT=Date.now();
-    follow(e.touches[0].clientX);
+    onPress(e.touches[0].clientX);
   },{passive:false});
   gameEl.addEventListener('touchmove',function(e){
     if(!G.running) return; e.preventDefault();
-    follow(e.touches[0].clientX);
+    onDrag(e.touches[0].clientX);
   },{passive:false});
   gameEl.addEventListener('touchend',function(){ if(G.running){ G.moving=false; G.dragNow=false; } });
   gameEl.addEventListener('touchcancel',function(){ if(G.running){ G.moving=false; G.dragNow=false; } });
   gameEl.addEventListener('mousedown',function(e){
     if(!G.running) return;
     if(Date.now()-lastTouchT < 600) return;  // 触摸后的合成鼠标事件忽略，避免重复触发
-    follow(e.clientX);
+    onPress(e.clientX);
   });
   window.addEventListener('mousemove',function(e){
     if(!G.running || !G.moving) return;
-    follow(e.clientX);
+    onDrag(e.clientX);
   });
   window.addEventListener('mouseup',function(){ if(G.running){ G.moving=false; G.dragNow=false; } });
 }
@@ -444,9 +452,20 @@ function collide(h){
 
 /* ══ 更新 ═══════════════════════════════════════════════ */
 function update(dt){
-  // 完全跟手：角色位置由输入直接设置，这里只处理走路动画（手指动才走，停则站定）
-  if(G.dragNow && Date.now()-G.dragT>150) G.dragNow=false;   // 手指停 150ms → 站定
-  if(G.dragNow){
+  // 移动：按下后线性走向目标点（不瞬移）；拖动时由输入直接跟手
+  var walking=false;
+  if(G.moving){
+    var dx=G.targetX - G.charX;
+    if(Math.abs(dx) > 4){                        // 还没到目标 → 匀速走过去
+      var step=Math.min(MOVE_SPEED*dt, Math.abs(dx));
+      G.charX += (dx>0?1:-1)*step;
+      G.charDir = (dx>0?1:-1);
+      walking=true;
+    }
+  }
+  // 走路动画：线性走动或拖动时播放；手指停 150ms 站定
+  if(G.dragNow && Date.now()-G.dragT>150) G.dragNow=false;
+  if(walking || G.dragNow){
     G.ftimer += dt;
     while(G.ftimer >= 0.12){ G.ftimer -= 0.12; G.frame=(G.frame+1)%10; }
     G.bob += dt*8;
@@ -659,7 +678,7 @@ function closeLBModal(){ $('lbModal').classList.remove('show'); }
 
 /* ══ 按钮绑定 ═══════════════════════════════════════════ */
 function bindButtons(){
-  $('startArea').addEventListener('click', function(){ playBtn(); showScreen('select'); });
+  $('startArea').addEventListener('click', function(){ playBtn(); playBgm(); showScreen('select'); });
   $('groomBtn').addEventListener('click', function(){ playBtn(); chooseChar('groom'); showScreen('rules'); });
   $('brideBtn').addEventListener('click', function(){ playBtn(); chooseChar('bride'); showScreen('rules'); });
   $('rulesBtn').addEventListener('click', function(){ playBtn(); showScreen('game'); });
@@ -685,6 +704,7 @@ function wechatFix(){
     v.muted=true;
   });
   document.addEventListener('touchstart', function(){
+    playBgm();   // 首次触摸 → 背景音乐从开始页就有（浏览器自动播放策略下的兜底）
     ['vStart','vSelect','vRules','vMap','vThanks'].forEach(function(id){
       var v=$(id);
       if(v && v.getAttribute('data-src') && v.paused) v.play().catch(function(){});
@@ -698,6 +718,7 @@ function init(){
   window.addEventListener('resize', fitStage);
   window.addEventListener('orientationchange', function(){ setTimeout(fitStage,200); });
   preloadAssets();
+  try{ setTimeout(function(){ playBgm(); }, 150); }catch(e){}   // 加载完成即尝试播放（开始页就有音乐）
   chooseChar('groom');      // 默认角色，避免未选择时进入游戏
   bindInput();
   bindButtons();
