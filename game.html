@@ -384,22 +384,39 @@ function pointerToCharX(clientX){
 function bindInput(){
   var gameEl=$('game');
   var lastTouchT=0;
+  var dragMode=false;   // false=线性走向目标；true=完全跟手（累计位移超过阈值才切换）
+  var sumDist=0;        // 按下后手指累计位移（逻辑像素）
   function onPress(clientX){           // 按下：记录目标点，角色线性走过去（不瞬移）
     G.targetX = pointerToCharX(clientX);
     G._lastX = G.targetX;
     G.moving = true;
+    dragMode=false;
+    sumDist=0;
   }
-  function onDrag(clientX){            // 拖动：完全跟手（手指动到哪角色到哪）
+  function onDrag(clientX){
     var nx = pointerToCharX(clientX);
-    if(Math.abs(nx - G._lastX) > 2){   // 手指真的动了才跟手
-      if(nx > G.charX) G.charDir = 1; else if(nx < G.charX) G.charDir = -1;
+    var d = nx - G._lastX;
+    G._lastX = nx;
+    G.moving = true;
+    if(dragMode){                      // 跟手：手指到哪角色到哪（零延迟）
+      if(nx >= G.charX) G.charDir = 1; else G.charDir = -1;
       G.charX = nx;
       G.targetX = nx;
-      G._lastX = nx;
       G.dragNow = true;
       G.dragT = Date.now();
+    }else{
+      sumDist += Math.abs(d);
+      if(sumDist > 25){                // 手指真的在拖（累计超阈值）→ 切换跟手
+        dragMode = true;
+        if(nx >= G.charX) G.charDir = 1; else G.charDir = -1;
+        G.charX = nx;
+        G.targetX = nx;
+        G.dragNow = true;
+        G.dragT = Date.now();
+      }else{                           // 轻微抖动/慢挪：只挪目标点，角色继续线性走，绝不瞬移
+        G.targetX = nx;
+      }
     }
-    G.moving = true;
   }
   gameEl.addEventListener('touchstart',function(e){
     if(!G.running) return; e.preventDefault();
