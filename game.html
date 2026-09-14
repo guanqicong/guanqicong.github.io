@@ -199,7 +199,7 @@ var DRAW_H = SPR_H * SPR_SCALE;      // 角色绘制高度 192
 var FEET_SRC_Y = 460;                // 角色脚底在源帧内的 Y（脚踩地面用）
 var GROUND_Y = 1170;                 // 角色脚底 Y（逻辑坐标）
 var CHAR_CENTER_Y = GROUND_Y - (FEET_SRC_Y - 20) * SPR_SCALE / 2;  // 角色视觉中心 Y（用于碰撞检测）
-var TS = '20260915';                 // 缓存时间戳，改版时更新此值即可
+var TS = '20260916';                 // 缓存时间戳，改版时更新此值即可
 
 /* ══ 素材 URL（全部带时间戳防缓存） ════════════════════ */
 var U = {
@@ -288,6 +288,7 @@ function playOne(id, src){
     v.src=full; v.setAttribute('data-src',full); v.load();
   }
   v.muted=true;
+  v.preload='auto';                    // 播放时自动缓冲，避免先卡海报
   v.loop = (id!=='vRules');           // 规则视频不循环，播完停最后一帧
   if(v.ended) v.currentTime=0;
   var p=v.play();
@@ -298,6 +299,7 @@ function preloadNext(screen){
   var v=$(id);
   if(v && !v.getAttribute('data-src')){
     v.src=q(VIDS[id]); v.setAttribute('data-src',q(VIDS[id]));
+    v.preload='auto';                    // 后台完整缓冲下一个视频，切换时秒播不卡海报
     v.load();                            // 静默 load，不自动播放
   }
 }
