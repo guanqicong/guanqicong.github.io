@@ -365,54 +365,59 @@ function showScreen(name){
 /* ══ 全资源加载：图片/视频/音频全部就绪后才进入游戏 ═══ */
 var LOAD_TOTAL=0, LOAD_DONE=0;
 function loadAssets(onProgress, onDone){
-  var items=[];
   var imgs={bg:U.bg, hr:U.hr, hy:U.hy, ring:U.ring, letter:U.letter, groom:U.groom, bride:U.bride};
-  Object.keys(imgs).forEach(function(k){ items.push({type:'img', key:k, src:q(imgs[k])}); });
-  Object.keys(VIDS).forEach(function(id){ items.push({type:'vid', key:id, src:q(VIDS[id])}); });
-  items.push({type:'aud', key:'bgm', el:'aBgm',  src:q(U.bgm)});
-  items.push({type:'aud', key:'btn', el:'aBtn',  src:q(U.btn)});
-  items.push({type:'aud', key:'cat', el:'aCatch',src:q(U.cat)});
-  LOAD_TOTAL=items.length; LOAD_DONE=0;
+  var vidIds=Object.keys(VIDS);               // 按使用顺序：start→select→rules→map→thanks
+  var auds=[['bgm','aBgm',U.bgm],['btn','aBtn',U.btn],['cat','aCatch',U.cat]];
+  var total=Object.keys(imgs).length + vidIds.length + auds.length;
+  var done=0;
   function tick(){
-    LOAD_DONE++;
-    if(typeof onProgress==='function') onProgress(LOAD_DONE, LOAD_TOTAL);
-    if(LOAD_DONE>=LOAD_TOTAL && typeof onDone==='function') onDone();
+    done++;
+    if(typeof onProgress==='function') onProgress(done, total);
+    if(done>=total && typeof onDone==='function') onDone();
   }
   function once(fn){ var d=false; return function(){ if(d) return; d=true; fn(); }; }
-  items.forEach(function(it){
-    if(it.type==='img'){
-      var im=new Image();
-      im.onload=tick; im.onerror=tick; im.src=it.src;
-      if(it.key==='bg') RES.bg=im;
-      else if(it.key==='hr') RES.hr=im;
-      else if(it.key==='hy') RES.hy=im;
-      else if(it.key==='ring') RES.ring=im;
-      else if(it.key==='letter') RES.letter=im;
-      else if(it.key==='groom'){ charImg=im; }
-      // bride 只用于计数，选中新娘时再引用
-    }else if(it.type==='vid'){
-      var v=$(it.key);
-      if(!v){ tick(); return; }
-      v.preload='auto';
-      if(v.getAttribute('data-src')!==it.src){ v.src=it.src; v.setAttribute('data-src',it.src); }
-      var ok=once(tick);
-      v.addEventListener('loadeddata', ok);   // 首帧数据就绪即可播放，边播边缓冲
-      if(v.readyState>=2) ok();
-      v.load();
-      setTimeout(ok, 8000);   // 弱网兜底：8 秒未就绪也算完成，不阻塞进入
-    }else if(it.type==='aud'){
-      var a=$(it.el);
-      if(!a){ tick(); return; }
-      var ok2=once(tick);
-      a.preload='auto';
-      if(a.getAttribute('data-src')!==it.src){ a.src=it.src; a.setAttribute('data-src',it.src); }
-      a.addEventListener('canplaythrough', ok2);
-      if(a.readyState>=3) ok2();
-      a.load();
-      setTimeout(ok2, 10000);
-    }
+  // ① 图片：并行加载（小文件，快）
+  Object.keys(imgs).forEach(function(k){
+    var im=new Image();
+    im.onload=tick; im.onerror=tick; im.src=q(imgs[k]);
+    if(k==='bg') RES.bg=im;
+    else if(k==='hr') RES.hr=im;
+    else if(k==='hy') RES.hy=im;
+    else if(k==='ring') RES.ring=im;
+    else if(k==='letter') RES.letter=im;
+    else if(k==='groom'){ charImg=im; }
   });
-  if(items.length===0) onDone();
+  // ② 音频：并行加载（小文件）
+  auds.forEach(function(a){
+    var el=$(a[1]);
+    if(!el){ tick(); return; }
+    var ok=once(tick);
+    el.preload='auto';
+    var full=q(a[2]);
+    if(el.getAttribute('data-src')!==full){ el.src=full; el.setAttribute('data-src',full); }
+    el.addEventListener('canplaythrough', ok);
+    if(el.readyState>=3) ok();
+    el.load();
+    setTimeout(ok, 15000);
+  });
+  // ③ 视频：按使用顺序逐个完整加载（避免并行抢连接，确保每个都真正就绪）
+  var vi=0;
+  function loadNextVid(){
+    if(vi>=vidIds.length) return;
+    var id=vidIds[vi++];
+    var v=$(id);
+    if(!v){ tick(); loadNextVid(); return; }
+    v.preload='auto';
+    var full=q(VIDS[id]);
+    if(v.getAttribute('data-src')!==full){ v.src=full; v.setAttribute('data-src',full); }
+    var ok=once(function(){ tick(); setTimeout(loadNextVid, 60); });   // 完成一个再下下一个
+    v.addEventListener('canplaythrough', ok);
+    if(v.readyState>=4) ok();
+    v.load();
+  }
+  loadNextVid();
+  // 整体兜底：25 秒后即使个别资源未就绪也强制进入（避免永远卡在加载页）
+  setTimeout(function(){ while(done<total) tick(); }, 25000);
 }
 function updateLoadPct(done, total){
   var pct=total ? Math.min(100, Math.round(done/total*100)) : 0;
@@ -824,10 +829,10 @@ function init(){
     showScreen('start');
     try{ setTimeout(function(){ playBgm(); }, 200); }catch(e){}   // 开始页就有音乐
   }
-  var forceTimer=setTimeout(enter, 20000);   // 20 秒兜底：弱网也能进游戏
+  // 全部素材就绪（loadAssets 内部含 25 秒弱网兜底）后进入开始页
   loadAssets(function(done,total){
     updateLoadPct(done,total);
-    if(done>=total){ clearTimeout(forceTimer); setTimeout(enter, 350); }
+    if(done>=total) setTimeout(enter, 350);
   }, function(){});
 }
 if(document.readyState==='loading'){
