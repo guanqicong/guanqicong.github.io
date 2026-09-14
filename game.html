@@ -199,7 +199,6 @@ var DRAW_H = SPR_H * SPR_SCALE;      // 角色绘制高度 192
 var FEET_SRC_Y = 460;                // 角色脚底在源帧内的 Y（脚踩地面用）
 var GROUND_Y = 1170;                 // 角色脚底 Y（逻辑坐标）
 var CHAR_CENTER_Y = GROUND_Y - (FEET_SRC_Y - 20) * SPR_SCALE / 2;  // 角色视觉中心 Y（用于碰撞检测）
-var CHAR_SPD = 420;                  // 角色移动速度 px/s
 var TS = '20260914';                 // 缓存时间戳，改版时更新此值即可
 
 /* ══ 素材 URL（全部带时间戳防缓存） ════════════════════ */
@@ -366,28 +365,58 @@ function startGame(){
   G._raf=requestAnimationFrame(loop);
 }
 
-/* ══ 输入：整屏可点，左半屏左移、右半屏右移 ════════════ */
-function setDirFromPos(clientX){
+/* ══ 输入：左半屏左移、右半屏右移；点一下走一步，按住持续走 ══ */
+var STEP_PX = 44;          // 每步距离（逻辑像素），可调：越大点一下走得越远
+var HOLD_DELAY = 250;      // 按住后开始持续走的延迟（毫秒）
+var HOLD_INTERVAL = 75;    // 持续走的步进间隔（毫秒），可调：越小走得越快
+var holdTimer = null, repeatTimer = null;
+function dirFromClientX(clientX){
   var rect=G.canvas.getBoundingClientRect();
   var x=(clientX-rect.left)/rect.width*LOGIC_W;
-  G.charDir = (x < LOGIC_W/2) ? -1 : 1;
-  G.moving=true;
+  return (x < LOGIC_W/2) ? -1 : 1;
+}
+function stepMove(){
+  G.charX += G.charDir * STEP_PX;
+  G.charX = Math.max(DRAW_W/2, Math.min(LOGIC_W-DRAW_W/2, G.charX));
+  G.moving = true;
+}
+function clearHold(){
+  if(holdTimer){ clearTimeout(holdTimer); holdTimer=null; }
+  if(repeatTimer){ clearInterval(repeatTimer); repeatTimer=null; }
+}
+function setDirFromPos(clientX){
+  G.charDir = dirFromClientX(clientX);
+  stepMove();                              // 点一下，立即走一步
+  clearHold();
+  holdTimer=setTimeout(function(){         // 按住不放，延迟后持续走
+    repeatTimer=setInterval(function(){ stepMove(); }, HOLD_INTERVAL);
+  }, HOLD_DELAY);
 }
 function bindInput(){
   var gameEl=$('game');
+  var lastTouchT=0;
   gameEl.addEventListener('touchstart',function(e){
     if(!G.running) return; e.preventDefault();
+    lastTouchT=Date.now();
     var t=e.touches[0]; setDirFromPos(t.clientX);
   },{passive:false});
   gameEl.addEventListener('touchmove',function(e){
     if(!G.running) return; e.preventDefault();
-    var t=e.touches[0]; setDirFromPos(t.clientX);
+    var t=e.touches[0];
+    G.charDir = dirFromClientX(t.clientX);   // 按住滑动时只更新方向
   },{passive:false});
-  gameEl.addEventListener('touchend',function(){ if(G.running) G.moving=false; });
-  gameEl.addEventListener('touchcancel',function(){ if(G.running) G.moving=false; });
-  gameEl.addEventListener('mousedown',function(e){ if(!G.running) return; setDirFromPos(e.clientX); });
-  window.addEventListener('mousemove',function(e){ if(!G.running||!G.moving) return; setDirFromPos(e.clientX); });
-  window.addEventListener('mouseup',function(){ if(G.running) G.moving=false; });
+  gameEl.addEventListener('touchend',function(){ if(G.running){ G.moving=false; clearHold(); } });
+  gameEl.addEventListener('touchcancel',function(){ if(G.running){ G.moving=false; clearHold(); } });
+  gameEl.addEventListener('mousedown',function(e){
+    if(!G.running) return;
+    if(Date.now()-lastTouchT < 600) return;  // 触摸后的合成鼠标事件忽略，避免重复走两步
+    setDirFromPos(e.clientX);
+  });
+  window.addEventListener('mousemove',function(e){
+    if(!G.running || !G.moving) return;
+    G.charDir = dirFromClientX(e.clientX);   // 按住拖动时更新方向
+  });
+  window.addEventListener('mouseup',function(){ if(G.running){ G.moving=false; clearHold(); } });
 }
 
 /* ══ 掉落物 ═════════════════════════════════════════════ */
@@ -418,11 +447,7 @@ function collide(h){
 
 /* ══ 更新 ═══════════════════════════════════════════════ */
 function update(dt){
-  // 移动
-  if(G.moving){
-    G.charX += G.charDir * CHAR_SPD * dt;
-    G.charX = Math.max(DRAW_W/2, Math.min(LOGIC_W-DRAW_W/2, G.charX));
-  }
+  // 移动为步进式：在输入事件里通过 stepMove() 走步，这里不再连续位移
   // 走路动画：每 0.12s 切一帧（上行 10 帧循环）
   G.ftimer += dt;
   while(G.ftimer >= 0.12){ G.ftimer -= 0.12; G.frame=(G.frame+1)%10; }
@@ -498,6 +523,7 @@ function loop(now){
 /* ══ 游戏结束 ═══════════════════════════════════════════ */
 function doGameOver(reason){
   G.running=false;
+  clearHold();                            // 停止按住持续走的定时器
   if(G._raf){ cancelAnimationFrame(G._raf); G._raf=null; }
   if(G.ctx) G.ctx.clearRect(0,0,LOGIC_W,LOGIC_H);
   var gc=$('gameCanvas');
