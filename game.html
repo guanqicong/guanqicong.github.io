@@ -432,18 +432,54 @@ function chooseChar(role){
   isBride = (role !== 'groom');
   charImg = new Image();
   charImg.src = q(role==='groom' ? U.groom : U.bride);
+  FRAME_CACHE=null;    // 角色图变了，预切帧缓存作废
 }
 
 /* ══ 游戏启动 / 画布尺寸 ═════════════════════════════════ */
+var BG_CANVAS=null;    // 背景离屏画布（预渲染一次，每帧直接贴，省去逐帧缩放大图）
+var SPR_CACHE={};      // 掉落物预切图（按类型缓存）
+var FRAME_CACHE=null;  // 角色 10 帧预切图
+function buildBgCanvas(){
+  if(!RES.bg || !RES.bg.complete) return null;
+  var c=document.createElement('canvas');
+  c.width=LOGIC_W; c.height=LOGIC_H;
+  var x=c.getContext('2d');
+  x.imageSmoothingEnabled=true;
+  x.drawImage(RES.bg, 0, 0, LOGIC_W, LOGIC_H);
+  return c;
+}
+function getSpr(type){
+  if(SPR_CACHE[type]) return SPR_CACHE[type];
+  var img = type==='red' ? RES.hr : type==='yellow' ? RES.hy : type==='ring' ? RES.ring : RES.letter;
+  if(!img || !img.complete) return null;
+  var hw=(type==='letter'?136:(type==='ring'?50:52)), hh=(type==='letter'?77:(type==='ring'?50:52));
+  var c=document.createElement('canvas'); c.width=hw*2; c.height=hh*2;
+  var x=c.getContext('2d'); x.imageSmoothingEnabled=true;
+  x.drawImage(img, 0, 0, hw*2, hh*2);
+  SPR_CACHE[type]=c; return c;
+}
+function getCharFrames(){
+  if(FRAME_CACHE) return FRAME_CACHE;
+  if(!charImg || !charImg.complete) return null;
+  FRAME_CACHE=[];
+  for(var f=0; f<10; f++){
+    var c=document.createElement('canvas'); c.width=DRAW_W; c.height=DRAW_H;
+    var x=c.getContext('2d'); x.imageSmoothingEnabled=true;
+    x.drawImage(charImg, f*SPR_W, 0, SPR_W, SPR_H, 0, 0, DRAW_W, DRAW_H);
+    FRAME_CACHE.push(c);
+  }
+  return FRAME_CACHE;
+}
 function sizeCanvas(){
   var c=$('gameCanvas');
   var rect=c.getBoundingClientRect();
-  var dpr=Math.min(window.devicePixelRatio||1, 2);
+  var dpr=Math.min(window.devicePixelRatio||1, 1.5);   // 渲染分辨率上限 1.5 倍，移动端大幅减负（画质几乎无感）
   c.width =Math.max(1, Math.round(rect.width*dpr));
   c.height=Math.max(1, Math.round(rect.height*dpr));
   G.canvas=c;
   G.ctx=c.getContext('2d');
   G.ctx.setTransform(c.width/LOGIC_W, 0, 0, c.height/LOGIC_H, 0, 0);
+  BG_CANVAS=buildBgCanvas();   // 背景预渲染一次
 }
 function startGame(){
   sizeCanvas();
@@ -532,6 +568,7 @@ function spawnHeart(){
   else if(r < 0.66){ type='yellow'; hw=52; hh=52; score=-20; speed=420; r2=48; } // 黄心 26%
   else if(r < 0.74){ type='ring';   hw=50; hh=50; score=50;  speed=240; r2=42; } // 戒指 8%（原图 512×512 正方形，正常比例）
   else {              type='letter'; hw=136;hh=77; score=0;   speed=420; r2=64; } // 请柬 26%（难度加大）
+  if(G.hearts.length >= 60) return;   // 同屏掉落物上限，防止极端堆积拖慢渲染
   G.hearts.push({
     type:type, x:hw+Math.random()*(LOGIC_W-2*hw), y:-hh,
     hw:hw, hh:hh, speed:speed, r2:r2
@@ -599,27 +636,25 @@ function roundRect(ctx,x,y,w,h,r){
 }
 function render(){
   var ctx=G.ctx;
-  // 背景（平滑）
-  ctx.imageSmoothingEnabled=true;
-  ctx.drawImage(RES.bg, 0, 0, LOGIC_W, LOGIC_H);
+  // 背景：直接贴预渲染好的离屏画布（避免每帧从大图缩放）
+  if(BG_CANVAS) ctx.drawImage(BG_CANVAS, 0, 0, LOGIC_W, LOGIC_H);
+  else if(RES.bg && RES.bg.complete) ctx.drawImage(RES.bg, 0, 0, LOGIC_W, LOGIC_H);
+  // 掉落物：使用预切小图
   ctx.imageSmoothingEnabled=false;
-  // 掉落物
   G.hearts.forEach(function(h){
-    var img = h.type==='red' ? RES.hr : h.type==='yellow' ? RES.hy :
-              h.type==='ring' ? RES.ring : RES.letter;
-    if(img && img.complete) ctx.drawImage(img, h.x-h.hw, h.y-h.hh, h.hw*2, h.hh*2);
+    var c=getSpr(h.type);
+    if(c) ctx.drawImage(c, h.x-h.hw, h.y-h.hh);
   });
-  // 角色整帧（源帧 345×480，1.5 倍绘制，脚底锚定 GROUND_Y）
-  if(charImg && charImg.complete){
-    var sx = G.frame * SPR_W;
-    var dw = DRAW_W, dh = DRAW_H;
-    var dx = G.charX - dw/2;
+  // 角色：使用预切帧（源帧 345×480，脚底锚定 GROUND_Y）
+  var frames=getCharFrames();
+  if(frames){
+    var dx = G.charX - DRAW_W/2;
     var dy = GROUND_Y - FEET_SRC_Y*SPR_SCALE + Math.sin(G.bob)*4;
     ctx.save();
     if((G.charDir < 0) !== isBride){  // 镜像翻转：新郎朝左时翻；新娘素材默认朝向相反，条件反转
       ctx.translate(G.charX*2,0); ctx.scale(-1,1);
     }
-    ctx.drawImage(charImg, sx,0,SPR_W,SPR_H, dx,dy,dw,dh);
+    ctx.drawImage(frames[G.frame], dx, dy);
     ctx.restore();
   }
   // HUD
