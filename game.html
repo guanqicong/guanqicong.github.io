@@ -400,22 +400,21 @@ function loadAssets(onProgress, onDone){
     el.load();
     setTimeout(ok, 15000);
   });
-  // ③ 视频：按使用顺序逐个完整加载（避免并行抢连接，确保每个都真正就绪）
-  var vi=0;
-  function loadNextVid(){
-    if(vi>=vidIds.length) return;
-    var id=vidIds[vi++];
+  // ③ 视频：并行加载，首帧就绪（loadeddata）即可算就绪；每视频 8 秒兜底
+  //    （canplaythrough 需缓冲到可播完，弱网下可能永不触发导致加载页干等，故用首帧判定+超时）
+  var vq=[];
+  vidIds.forEach(function(id){
     var v=$(id);
-    if(!v){ tick(); loadNextVid(); return; }
+    if(!v){ tick(); return; }
     v.preload='auto';
     var full=q(VIDS[id]);
     if(v.getAttribute('data-src')!==full){ v.src=full; v.setAttribute('data-src',full); }
-    var ok=once(function(){ tick(); setTimeout(loadNextVid, 60); });   // 完成一个再下下一个
-    v.addEventListener('canplaythrough', ok);
-    if(v.readyState>=4) ok();
+    var ok=once(tick);
+    v.addEventListener('loadeddata', ok);
+    if(v.readyState>=2) ok();
     v.load();
-  }
-  loadNextVid();
+    setTimeout(ok, 8000);   // 8 秒兜底：即便慢网也计入完成，切屏时自动续缓冲
+  });
   // 整体兜底：25 秒后即使个别资源未就绪也强制进入（避免永远卡在加载页）
   setTimeout(function(){ while(done<total) tick(); }, 25000);
 }
