@@ -353,24 +353,6 @@ function preloadAssets(){
     }
     v.load();
   });
-  // 解码器预热：播放一小段再停回首帧，移动端切换时首帧秒出（不卡第一帧）
-  setTimeout(function(){
-    Object.keys(VIDS).forEach(function(id){
-      var v=$(id);
-      if(!v) return;
-      var p=v.play();
-      if(p && p.catch) p.catch(function(){});
-    });
-    setTimeout(function(){
-      Object.keys(VIDS).forEach(function(id){
-        var v=$(id);
-        if(!v) return;
-        var cur=document.querySelector('.screen.active');
-        if(cur && cur.querySelector('video')===v) return;   // 当前画面正在播的不断
-        try{ v.pause(); v.currentTime=0; }catch(e){}
-      });
-    }, 300);
-  }, 400);
   // 规则视频播完停回首帧：下次进入直接从头播，无需 seek（避免首帧卡）
   var rv=$('vRules');
   if(rv) rv.addEventListener('ended', function(){ try{ rv.currentTime=0; }catch(e){} });
