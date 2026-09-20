@@ -28,6 +28,23 @@ button{font-family:inherit;}
 .screen video{width:100%;height:100%;object-fit:cover;display:block;background:#000;}
 /* 视频兜底静态画面：微信拦自动播放时显示婚礼画面（不黑屏），视频一播立即淡出 */
 .vid-poster{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;z-index:3;opacity:1;transition:opacity .4s;pointer-events:none;}
+/* 登记页（原感谢页） */
+#thanks{background:linear-gradient(160deg,#a3241b 0%,#c9342a 45%,#e8b06a 100%);}
+.reg-card{position:absolute;left:7%;right:7%;top:9%;z-index:5;background:rgba(255,255,255,.97);border-radius:22px;padding:30px 22px;text-align:center;box-shadow:0 12px 40px rgba(60,10,10,.45);}
+.reg-logo{font-size:42px;}
+.reg-title{font-size:24px;color:#a3241b;font-weight:800;letter-spacing:3px;margin:6px 0 4px;}
+.reg-sub{font-size:13px;color:#8a4a28;margin-bottom:18px;}
+#regName{width:100%;height:50px;border:2px solid #e8b06a;border-radius:14px;background:#fffaf3;padding:0 14px;font-size:17px;color:#4a2010;outline:none;text-align:center;box-sizing:border-box;}
+#regName:focus{border-color:#c9342a;}
+.reg-numrow{display:flex;align-items:center;justify-content:center;gap:20px;margin:16px 0;}
+.reg-btn{width:50px;height:50px;border:none;border-radius:14px;background:linear-gradient(180deg,#e94f37,#c9342a);color:#fff;font-size:26px;font-weight:700;cursor:pointer;box-shadow:0 3px 0 #8e1f1f;}
+.reg-btn:active{transform:translateY(2px);box-shadow:0 1px 0 #8e1f1f;}
+#regNum{font-size:30px;font-weight:800;color:#a3241b;min-width:52px;}
+.reg-submit{width:100%;height:54px;border:none;border-radius:16px;background:linear-gradient(180deg,#f2a03d,#e07a1f);color:#fff;font-size:19px;font-weight:800;letter-spacing:4px;cursor:pointer;box-shadow:0 4px 0 #a85a10;}
+.reg-submit:active{transform:translateY(2px);box-shadow:0 2px 0 #a85a10;}
+.reg-submit:disabled{opacity:.6;}
+.reg-msg{min-height:20px;font-size:14px;font-weight:700;color:#1d7a3a;margin-top:10px;}
+.reg-msg.err{color:#c9342a;}
 
 /* ══ 透明点击按钮（位置严格按需求文档） ════════════════ */
 .win-btn{position:absolute;border:none;background:transparent;padding:0;margin:0;cursor:pointer;z-index:10;touch-action:manipulation;}
@@ -177,11 +194,21 @@ button{font-family:inherit;}
     <button id="joinBtn" class="win-btn" aria-label="参加婚礼"></button>
   </div>
 
-  <!-- 6. 感谢页 -->
+  <!-- 6. 登记页（原感谢页：不再用感谢视频素材，改为婚礼宾客登记） -->
   <div id="thanks" class="screen">
-    <video id="vThanks" preload="auto" loop muted playsinline webkit-playsinline
-      x5-playsinline x5-video-player-type="h5" x5-video-player-fullscreen="false"
-      ></video>
+    <div class="reg-card">
+      <div class="reg-logo">💌</div>
+      <div class="reg-title">宾客登记</div>
+      <div class="reg-sub">填写信息，让我们提前知道您要来！</div>
+      <input id="regName" type="text" maxlength="12" placeholder="您的姓名（如：张三）" autocomplete="off" />
+      <div class="reg-numrow">
+        <button id="regMinus" class="reg-btn" aria-label="减少">−</button>
+        <span id="regNum">2</span>
+        <button id="regPlus" class="reg-btn" aria-label="增加">+</button>
+      </div>
+      <button id="regSubmit" class="reg-submit">提交登记</button>
+      <div id="regMsg" class="reg-msg"></div>
+    </div>
   </div>
 </div>
 
@@ -236,7 +263,7 @@ var DRAW_H = SPR_H * SPR_SCALE;      // 角色绘制高度 ~249
 var FEET_SRC_Y = 230;                // 角色脚底在源帧内的 Y（脚踩地面用）
 var GROUND_Y = 1170;                 // 角色脚底 Y（逻辑坐标）
 var CHAR_CENTER_Y = GROUND_Y - (FEET_SRC_Y - 20) * SPR_SCALE / 2;  // 角色视觉中心 Y（用于碰撞检测）
-var TS = '20260925';                 // 缓存时间戳，改版时更新此值即可
+var TS = '20260926';                 // 缓存时间戳，改版时更新此值即可
 
 /* ══ 素材 URL（全部带时间戳防缓存） ════════════════════ */
 var U = {
@@ -257,9 +284,8 @@ var VIDS = {
   vSelect: 'assets/select_v2.mp4',
   vRules:  'assets/rules.mp4',
   vMap:    'assets/map_v2.mp4',
-  vThanks: 'assets/thanks_v2.mp4'
 };
-var NEXT = { start:'vSelect', select:'vRules', rules:'vMap', map:'vThanks', thanks:'vStart' };
+var NEXT = { start:'vSelect', select:'vRules', rules:'vMap', map:'', thanks:'vStart' };
 function q(u){ return u + '?t=' + TS; }
 
 /* ══ 游戏状态 ═══════════════════════════════════════════ */
@@ -381,7 +407,7 @@ function showScreen(name){
   if(name==='select') playOne('vSelect', VIDS.vSelect);
   if(name==='rules')  playOne('vRules',  VIDS.vRules);
   if(name==='map')    playOne('vMap',    VIDS.vMap);   // 地图页：播专属单场景循环视频（map_v2.mp4 已裁剪为纯地图画面）
-  if(name==='thanks') playOne('vThanks', VIDS.vThanks);
+  if(name==='thanks') regInit();
   preloadNext(name);                     // 后台静默 load 下一个视频
   // 5. 游戏屏
   if(name==='game'){
@@ -825,6 +851,41 @@ function openLBModal(){
 }
 function closeLBModal(){ $('lbModal').classList.remove('show'); }
 
+/* ══ 宾客登记（原感谢页：登记姓名+人数，上传云端） ═══ */
+var regNum=2;
+function regInit(){
+  regNum=2;
+  var n=$('regName');   if(n){ n.value=''; n.disabled=false; }
+  var m=$('regMsg');    if(m){ m.textContent=''; m.className='reg-msg'; }
+  var b=$('regSubmit'); if(b){ b.disabled=false; b.textContent='提交登记'; }
+  var p=$('regPlus'), mn=$('regMinus');
+  if(p)  p.style.display='inline-block';
+  if(mn) mn.style.display='inline-block';
+  var nn=$('regNum');   if(nn) nn.textContent='2';
+}
+function bindReg(){
+  $('regPlus').addEventListener('click', function(){ if(regNum<20) regNum++; $('regNum').textContent=regNum; });
+  $('regMinus').addEventListener('click', function(){ if(regNum>1) regNum--; $('regNum').textContent=regNum; });
+  $('regSubmit').addEventListener('click', function(){
+    var name=$('regName').value.trim();
+    var msg=$('regMsg');
+    if(!name){ msg.textContent='请先输入您的姓名'; msg.className='reg-msg err'; return; }
+    var btn=$('regSubmit'); btn.disabled=true;
+    msg.textContent='正在提交，请稍候…'; msg.className='reg-msg';
+    fetch(API,{method:'POST',
+      headers:{'Accept':'application/vnd.github+json','Authorization':'Bearer '+LBTOK,'Content-Type':'application/json'},
+      body:JSON.stringify({title:'宾客登记：'+name, body:'参加人数：'+regNum+'人\n提交时间：'+new Date().toLocaleString('zh-CN')})})
+    .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+    .then(function(){
+      msg.textContent='✅ 登记成功！期待与您相见'; msg.className='reg-msg';
+      $('regName').disabled=true; $('regName').value='';
+      $('regPlus').style.display='none'; $('regMinus').style.display='none';
+      btn.textContent='已登记 ✓';
+    })
+    .catch(function(){ btn.disabled=false; msg.textContent='提交失败，请检查网络后重试'; msg.className='reg-msg err'; });
+  });
+}
+
 /* ══ 按钮绑定 ═══════════════════════════════════════════ */
 function bindButtons(){
   $('startArea').addEventListener('click', function(){ playBtn(); playBgm(); showScreen('select'); });
@@ -840,6 +901,7 @@ function bindButtons(){
   $('lbCloseBtn').addEventListener('click', function(){ playBtn(); closeLBModal(); });
   $('uploadBtn').addEventListener('click', function(){ playBtn(); uploadScore(); });
   $('lbModal').addEventListener('click', function(e){ if(e.target===this) closeLBModal(); });
+  bindReg();
 }
 
 /* ══ 微信 X5 内核兼容 + 触摸解锁视频 ════════════════════ */
