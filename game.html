@@ -234,7 +234,7 @@ var DRAW_H = SPR_H * SPR_SCALE;      // 角色绘制高度 ~249
 var FEET_SRC_Y = 230;                // 角色脚底在源帧内的 Y（脚踩地面用）
 var GROUND_Y = 1170;                 // 角色脚底 Y（逻辑坐标）
 var CHAR_CENTER_Y = GROUND_Y - (FEET_SRC_Y - 20) * SPR_SCALE / 2;  // 角色视觉中心 Y（用于碰撞检测）
-var TS = '20260921';                 // 缓存时间戳，改版时更新此值即可
+var TS = '20260922';                 // 缓存时间戳，改版时更新此值即可
 
 /* ══ 素材 URL（全部带时间戳防缓存） ════════════════════ */
 var U = {
@@ -488,7 +488,7 @@ function getSpr(type){
   if(SPR_CACHE[type]) return SPR_CACHE[type];
   var img = type==='red' ? RES.hr : type==='yellow' ? RES.hy : type==='ring' ? RES.ring : RES.letter;
   if(!img || !img.complete) return null;
-  var hw=(type==='letter'?136:(type==='ring'?50:52)), hh=(type==='letter'?77:(type==='ring'?50:52));
+  var hw=(type==='letter'?136:(type==='ring'?58:52)), hh=(type==='letter'?77:(type==='ring'?58:52));
   var c=document.createElement('canvas'); c.width=hw*2; c.height=hh*2;
   var x=c.getContext('2d'); x.imageSmoothingEnabled=true;
   x.drawImage(img, 0, 0, hw*2, hh*2);
@@ -574,10 +574,10 @@ function bindInput(){
 /* ══ 掉落物 ═════════════════════════════════════════════ */
 function spawnHeart(){
   var r=Math.random(), type, hw, hh, score, speed, r2;
-  if(r < 0.40){ type='red';    hw=52; hh=52; score=10;  speed=240; r2=48; }   // 红心 40%
-  else if(r < 0.66){ type='yellow'; hw=52; hh=52; score=-20; speed=420; r2=48; } // 黄心 26%
-  else if(r < 0.74){ type='ring';   hw=50; hh=50; score=50;  speed=240; r2=42; } // 戒指 8%（原图 512×512 正方形，正常比例）
-  else {              type='letter'; hw=136;hh=77; score=0;   speed=420; r2=64; } // 请柬 26%（难度加大）
+  if(r < 0.48){ type='red';    hw=52; hh=52; score=10;  speed=240; r2=48; }   // 红心 48%（更多）
+  else if(r < 0.70){ type='yellow'; hw=52; hh=52; score=-20; speed=420; r2=48; } // 黄心 22%
+  else if(r < 0.78){ type='ring';   hw=58; hh=58; score=50;  speed=240; r2=52; } // 戒指 8%（放大 16%，碰撞同步放大）
+  else {              type='letter'; hw=136;hh=77; score=0;   speed=420; r2=64; } // 请柬 22%
   if(G.hearts.length >= 60) return;   // 同屏掉落物上限，防止极端堆积拖慢渲染
   G.hearts.push({
     type:type, x:hw+Math.random()*(LOGIC_W-2*hw), y:-hh,
