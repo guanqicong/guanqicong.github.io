@@ -32,7 +32,7 @@ button{font-family:inherit;}
 /* ══ 透明点击按钮（位置严格按需求文档） ════════════════ */
 .win-btn{position:absolute;border:none;background:transparent;padding:0;margin:0;cursor:pointer;z-index:10;touch-action:manipulation;}
 #startHint{
-  position:absolute;left:0;right:0;bottom:10%;text-align:center;z-index:20;
+  position:absolute;left:0;right:0;top:46%;text-align:center;z-index:20;
   color:#ffd700;font-size:22px;font-weight:700;letter-spacing:4px;
   text-shadow:0 2px 10px rgba(0,0,0,.7);
   animation:ldbeat 1.4s ease-in-out infinite;
@@ -237,7 +237,7 @@ var DRAW_H = SPR_H * SPR_SCALE;      // 角色绘制高度 ~249
 var FEET_SRC_Y = 230;                // 角色脚底在源帧内的 Y（脚踩地面用）
 var GROUND_Y = 1170;                 // 角色脚底 Y（逻辑坐标）
 var CHAR_CENTER_Y = GROUND_Y - (FEET_SRC_Y - 20) * SPR_SCALE / 2;  // 角色视觉中心 Y（用于碰撞检测）
-var TS = '20260923';                 // 缓存时间戳，改版时更新此值即可
+var TS = '20260924';                 // 缓存时间戳，改版时更新此值即可
 
 /* ══ 素材 URL（全部带时间戳防缓存） ════════════════════ */
 var U = {
