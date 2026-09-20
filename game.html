@@ -25,7 +25,7 @@ button{font-family:inherit;}
 }
 .screen{position:absolute;left:0;top:0;width:100%;height:100%;display:none;overflow:hidden;}
 .screen.active{display:block;}
-.screen video{width:100%;height:100%;object-fit:cover;display:block;background:#000;}
+.screen video{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;display:block;background:transparent;z-index:4;/* 无画面时透明，露出下方静态兜底图，杜绝黑屏 */}
 /* 视频兜底静态画面：微信拦自动播放时显示婚礼画面（不黑屏），视频一播立即淡出 */
 .vid-poster{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;z-index:3;opacity:1;transition:opacity .4s;pointer-events:none;}
 
@@ -236,7 +236,7 @@ var DRAW_H = SPR_H * SPR_SCALE;      // 角色绘制高度 ~249
 var FEET_SRC_Y = 230;                // 角色脚底在源帧内的 Y（脚踩地面用）
 var GROUND_Y = 1170;                 // 角色脚底 Y（逻辑坐标）
 var CHAR_CENTER_Y = GROUND_Y - (FEET_SRC_Y - 20) * SPR_SCALE / 2;  // 角色视觉中心 Y（用于碰撞检测）
-var TS = '20260928';                 // 缓存时间戳，改版时更新此值即可
+var TS = '20260929';                 // 缓存时间戳，改版时更新此值即可
 
 /* ══ 素材 URL（全部带时间戳防缓存） ════════════════════ */
 var U = {
@@ -350,6 +350,8 @@ function playOne(id, src){
   };
   var p=v.play();
   if(p && p.then) p.then(function(){ if(id==='vStart') hideCover(); }).catch(function(){ tryPlay(); });
+  // 真正开始播放（出画面）才隐藏兜底图：play() resolve 不代表已渲染，避免提前隐藏导致黑屏
+  v.addEventListener('playing', function(){ if(id==='vStart') hideCover(); }, {once:true});
   // 首帧未就绪时 play() 可能一直挂起（pending）不 reject → 必须主动等 loadeddata 再补播
   if(v.readyState<2) v.addEventListener('loadeddata', tryPlay, {once:true});
 }
