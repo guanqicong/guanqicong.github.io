@@ -236,7 +236,7 @@ var DRAW_H = SPR_H * SPR_SCALE;      // 角色绘制高度 ~249
 var FEET_SRC_Y = 230;                // 角色脚底在源帧内的 Y（脚踩地面用）
 var GROUND_Y = 1170;                 // 角色脚底 Y（逻辑坐标）
 var CHAR_CENTER_Y = GROUND_Y - (FEET_SRC_Y - 20) * SPR_SCALE / 2;  // 角色视觉中心 Y（用于碰撞检测）
-var TS = '20260930';                 // 缓存时间戳，改版时更新此值即可
+var TS = '20261001';                 // 缓存时间戳，改版时更新此值即可
 
 /* ══ 素材 URL（全部带时间戳防缓存） ════════════════════ */
 var U = {
@@ -808,18 +808,8 @@ function showToast(msg){
 
 /* ══ 地图：唤起百度地图 App，1.2s 降级网页版 ════════════ */
 function openMap(){
-  var kw=encodeURIComponent('广州南沙星河吉酒店');
-  var ua=(navigator.userAgent||'').toLowerCase();
-  var isIOS=/iphone|ipad|ipod/i.test(ua);
-  var scheme=(isIOS?'baidumap://map/place/search?query='
-                   :'bdapp://map/place/search?query=')+kw;
-  var web='https://map.baidu.com/search/'+kw;
-  var opened=false;
-  try{ window.location.href=scheme; }catch(e){}
-  window.addEventListener('visibilitychange',function(){
-    if(document.hidden) opened=true;
-  });
-  setTimeout(function(){ if(!opened) window.location.href=web; }, 1200);
+  // 百度地图官方分享短链：点击直接打开酒店位置（自动唤起百度地图App/H5）
+  window.location.href='https://j.map.baidu.com/0e/uf_h';
 }
 function openLBModal(){
   loadLeaderboard('lbFullList');
