@@ -98,7 +98,7 @@ button{font-family:inherit;}
 
 /* ══ 加载页（全部素材就绪后才进入游戏） ═══════════════ */
 #loading{position:fixed;left:0;top:0;width:100%;height:100%;z-index:250;display:flex;align-items:center;justify-content:center;
-  background:linear-gradient(180deg,#2b0a0a 0%,#4a1010 60%,#5c1512 100%);transition:opacity .5s;}
+  background:radial-gradient(circle at 50% 30%,#a02416 0%,#7c1410 55%,#5c0f0c 100%);transition:opacity .5s;}
 #loading.hide{opacity:0;pointer-events:none;}
 .ld-box{width:76%;max-width:430px;text-align:center;color:#ffd9a0;}
 .ld-heart{font-size:44px;line-height:1;margin-bottom:14px;animation:ldbeat 1s ease-in-out infinite;}
@@ -219,14 +219,14 @@ button{font-family:inherit;}
 
 /* ══ 常量 ══════════════════════════════════════════════ */
 var LOGIC_W = 720, LOGIC_H = 1280;   // 逻辑画布尺寸
-var SPR_W = 345, SPR_H = 480;        // 精灵图实际帧尺寸（3450÷10 帧=345, 960÷2 行=480，上行 10 帧）
-var SPR_SCALE = 0.52;                // 角色绘制倍率（放大 30%：0.4 × 1.3）
-var DRAW_W = SPR_W * SPR_SCALE;      // 角色绘制宽度 138
-var DRAW_H = SPR_H * SPR_SCALE;      // 角色绘制高度 192
-var FEET_SRC_Y = 460;                // 角色脚底在源帧内的 Y（脚踩地面用）
+var SPR_W = 173, SPR_H = 240;        // 精灵图帧尺寸（压缩版：10 帧×173、单行 240 高）
+var SPR_SCALE = 1.037;               // 角色绘制倍率（173×1.037≈179.4，保持原绘制尺寸）
+var DRAW_W = SPR_W * SPR_SCALE;      // 角色绘制宽度 ~179
+var DRAW_H = SPR_H * SPR_SCALE;      // 角色绘制高度 ~249
+var FEET_SRC_Y = 230;                // 角色脚底在源帧内的 Y（脚踩地面用）
 var GROUND_Y = 1170;                 // 角色脚底 Y（逻辑坐标）
 var CHAR_CENTER_Y = GROUND_Y - (FEET_SRC_Y - 20) * SPR_SCALE / 2;  // 角色视觉中心 Y（用于碰撞检测）
-var TS = '20260920';                 // 缓存时间戳，改版时更新此值即可
+var TS = '20260921';                 // 缓存时间戳，改版时更新此值即可
 
 /* ══ 素材 URL（全部带时间戳防缓存） ════════════════════ */
 var U = {
@@ -426,10 +426,10 @@ function loadAssets(onProgress, onDone){
     v.load();
     setTimeout(ok, 6000);   // 6 秒兜底
   });
-  // ④ 轮询兜底：250ms 检查一次就绪状态（事件没触发也能发现），整体 12 秒强制进入
+  // ④ 轮询兜底：250ms 检查一次就绪状态（事件没触发也能发现），整体 8 秒强制进入
   var started=Date.now();
   (function poll(){
-    if(done>=total || Date.now()-started >= 12000){
+    if(done>=total || Date.now()-started >= 8000){
       while(done<total) tick();   // 到点强制收尾（剩余资源进入游戏后自动续缓冲）
       return;
     }
