@@ -29,6 +29,13 @@ button{font-family:inherit;}
 
 /* ══ 透明点击按钮（位置严格按需求文档） ════════════════ */
 .win-btn{position:absolute;border:none;background:transparent;padding:0;margin:0;cursor:pointer;z-index:10;touch-action:manipulation;}
+#startHint{
+  position:absolute;left:0;right:0;bottom:10%;text-align:center;z-index:20;
+  color:#ffd700;font-size:22px;font-weight:700;letter-spacing:4px;
+  text-shadow:0 2px 10px rgba(0,0,0,.7);
+  animation:ldbeat 1.4s ease-in-out infinite;
+  transition:opacity .5s;pointer-events:none;
+}
 #startArea{top:88%;height:8%;left:29%;right:29%;}
 #groomBtn{top:81%;height:13%;left:3%;width:40%;}
 #brideBtn{top:81%;height:13%;left:53%;width:40%;}
@@ -133,6 +140,7 @@ button{font-family:inherit;}
       x5-playsinline x5-video-player-type="h5" x5-video-player-fullscreen="false"
       ></video>
     <button id="startArea" class="win-btn" aria-label="开始游戏"></button>
+    <div id="startHint">👆 轻触屏幕 · 开始游戏</div>
   </div>
 
   <!-- 2. 角色选择页 -->
@@ -322,11 +330,22 @@ function playOne(id, src){
   v.preload='auto';                    // 播放时自动缓冲，避免先卡海报
   v.loop = (id!=='vRules');           // 规则视频不循环，播完停最后一帧
   if(v.ended) v.currentTime=0;
+  // 开始页"轻触屏幕"提示：播放成功则淡出，播放被微信拦截则保留引导
+  if(id==='vStart'){
+    var hint=$('startHint');
+    var hideHint=function(){ if(hint) hint.style.opacity='0'; };
+    var showHint=function(){ if(hint) hint.style.opacity='1'; };
+    showHint();
+    setTimeout(function(){ if(v.paused){ v.currentTime=0.01; tryPlay(); } }, 120);
+  }
   var tryPlay=function(){
-    if(v.paused) v.play().catch(function(){});
+    if(v.paused){
+      var pp=v.play();
+      if(pp && pp.then) pp.then(function(){ if(id==='vStart') hideHint(); }).catch(function(){});
+    }
   };
   var p=v.play();
-  if(p && p.catch) p.catch(function(){ tryPlay(); });
+  if(p && p.then) p.then(function(){ if(id==='vStart') hideHint(); }).catch(function(){ tryPlay(); });
   // 首帧未就绪时 play() 可能一直挂起（pending）不 reject → 必须主动等 loadeddata 再补播
   if(v.readyState<2) v.addEventListener('loadeddata', tryPlay, {once:true});
 }
@@ -834,7 +853,10 @@ function wechatFix(){
     // 只播当前画面的视频（其余后台预载不播，避免多个视频同时出声）
     var cur=document.querySelector('.screen.active');
     var v=cur ? cur.querySelector('video') : null;
-    if(v && v.getAttribute('data-src') && v.paused) v.play().catch(function(){});
+    if(v && v.getAttribute('data-src') && v.paused){
+      var pp=v.play();
+      if(pp && pp.then) pp.then(function(){ var h=$('startHint'); if(h) h.style.opacity='0'; }).catch(function(){});
+    }
   }, {passive:true});
 }
 
