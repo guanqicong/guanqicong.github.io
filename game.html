@@ -30,20 +30,21 @@ button{font-family:inherit;}
 .vid-poster{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;z-index:3;opacity:1;transition:opacity .4s;pointer-events:none;}
 /* 登记页（原感谢页） */
 #thanks{background:linear-gradient(160deg,#a3241b 0%,#c9342a 45%,#e8b06a 100%);}
-.reg-card{position:absolute;left:7%;right:7%;top:9%;z-index:5;background:rgba(255,255,255,.97);border-radius:22px;padding:30px 22px;text-align:center;box-shadow:0 12px 40px rgba(60,10,10,.45);}
-.reg-logo{font-size:42px;}
-.reg-title{font-size:24px;color:#a3241b;font-weight:800;letter-spacing:3px;margin:6px 0 4px;}
-.reg-sub{font-size:13px;color:#8a4a28;margin-bottom:18px;}
-#regName{width:100%;height:50px;border:2px solid #e8b06a;border-radius:14px;background:#fffaf3;padding:0 14px;font-size:17px;color:#4a2010;outline:none;text-align:center;box-sizing:border-box;}
+#thanks.active{display:flex;align-items:center;justify-content:center;}
+.reg-card{position:relative;width:90%;max-width:660px;margin:0 auto;z-index:5;background:rgba(255,255,255,.97);border-radius:30px;padding:48px 30px;text-align:center;box-shadow:0 14px 44px rgba(60,10,10,.5);}
+.reg-logo{font-size:56px;}
+.reg-title{font-size:32px;color:#a3241b;font-weight:800;letter-spacing:4px;margin:10px 0 6px;}
+.reg-sub{font-size:16px;color:#8a4a28;margin-bottom:26px;}
+#regName{width:100%;height:58px;border:2px solid #e8b06a;border-radius:16px;background:#fffaf3;padding:0 14px;font-size:20px;color:#4a2010;outline:none;text-align:center;box-sizing:border-box;}
 #regName:focus{border-color:#c9342a;}
-.reg-numrow{display:flex;align-items:center;justify-content:center;gap:20px;margin:16px 0;}
-.reg-btn{width:50px;height:50px;border:none;border-radius:14px;background:linear-gradient(180deg,#e94f37,#c9342a);color:#fff;font-size:26px;font-weight:700;cursor:pointer;box-shadow:0 3px 0 #8e1f1f;}
+.reg-numrow{display:flex;align-items:center;justify-content:center;gap:24px;margin:22px 0;}
+.reg-btn{width:62px;height:62px;border:none;border-radius:18px;background:linear-gradient(180deg,#e94f37,#c9342a);color:#fff;font-size:32px;font-weight:700;cursor:pointer;box-shadow:0 4px 0 #8e1f1f;}
 .reg-btn:active{transform:translateY(2px);box-shadow:0 1px 0 #8e1f1f;}
-#regNum{font-size:30px;font-weight:800;color:#a3241b;min-width:52px;}
-.reg-submit{width:100%;height:54px;border:none;border-radius:16px;background:linear-gradient(180deg,#f2a03d,#e07a1f);color:#fff;font-size:19px;font-weight:800;letter-spacing:4px;cursor:pointer;box-shadow:0 4px 0 #a85a10;}
+#regNum{font-size:40px;font-weight:800;color:#a3241b;min-width:64px;}
+.reg-submit{width:100%;height:64px;border:none;border-radius:18px;background:linear-gradient(180deg,#f2a03d,#e07a1f);color:#fff;font-size:24px;font-weight:800;letter-spacing:6px;cursor:pointer;box-shadow:0 5px 0 #a85a10;}
 .reg-submit:active{transform:translateY(2px);box-shadow:0 2px 0 #a85a10;}
 .reg-submit:disabled{opacity:.6;}
-.reg-msg{min-height:20px;font-size:14px;font-weight:700;color:#1d7a3a;margin-top:10px;}
+.reg-msg{min-height:22px;font-size:16px;font-weight:700;color:#1d7a3a;margin-top:14px;}
 .reg-msg.err{color:#c9342a;}
 
 /* ══ 透明点击按钮（位置严格按需求文档） ════════════════ */
@@ -263,7 +264,7 @@ var DRAW_H = SPR_H * SPR_SCALE;      // 角色绘制高度 ~249
 var FEET_SRC_Y = 230;                // 角色脚底在源帧内的 Y（脚踩地面用）
 var GROUND_Y = 1170;                 // 角色脚底 Y（逻辑坐标）
 var CHAR_CENTER_Y = GROUND_Y - (FEET_SRC_Y - 20) * SPR_SCALE / 2;  // 角色视觉中心 Y（用于碰撞检测）
-var TS = '20260926';                 // 缓存时间戳，改版时更新此值即可
+var TS = '20260927';                 // 缓存时间戳，改版时更新此值即可
 
 /* ══ 素材 URL（全部带时间戳防缓存） ════════════════════ */
 var U = {
