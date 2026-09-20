@@ -851,15 +851,7 @@ function init(){
     if(entered) return; entered=true;
     var l=$('loading'); if(l) l.classList.add('hide');
     setTimeout(function(){ if(l) l.style.display='none'; }, 600);
-    // 预热开始页视频：播放 300ms 再停，确保进入时画面已在动（加载页刚过、解码器就绪）
-    try{
-      var vs=$('vStart');
-      if(vs && vs.readyState>=2){
-        var pr=vs.play(); if(pr&&pr.catch) pr.catch(function(){});
-        setTimeout(function(){ try{ vs.pause(); }catch(e){} }, 300);
-      }
-    }catch(e){}
-    showScreen('start');
+    showScreen('start');   // 进入即播开始页视频（未就绪时会自动补播，见 playOne）
     try{ setTimeout(function(){ playBgm(); }, 200); }catch(e){}   // 开始页就有音乐
   }
   // 全部素材就绪（loadAssets：事件+轮询双保险，最迟 12 秒进入）后进开始页
