@@ -226,7 +226,7 @@ var DRAW_H = SPR_H * SPR_SCALE;      // 角色绘制高度 192
 var FEET_SRC_Y = 460;                // 角色脚底在源帧内的 Y（脚踩地面用）
 var GROUND_Y = 1170;                 // 角色脚底 Y（逻辑坐标）
 var CHAR_CENTER_Y = GROUND_Y - (FEET_SRC_Y - 20) * SPR_SCALE / 2;  // 角色视觉中心 Y（用于碰撞检测）
-var TS = '20260917';                 // 缓存时间戳，改版时更新此值即可
+var TS = '20260920';                 // 缓存时间戳，改版时更新此值即可
 
 /* ══ 素材 URL（全部带时间戳防缓存） ════════════════════ */
 var U = {
@@ -323,7 +323,16 @@ function playOne(id, src){
   v.loop = (id!=='vRules');           // 规则视频不循环，播完停最后一帧
   if(v.ended) v.currentTime=0;
   var p=v.play();
-  if(p && p.catch) p.catch(function(){});
+  if(p && p.catch){
+    p.catch(function(){
+      // 播放被拦或数据未就绪：等首帧就绪后立即补播，保证画面不卡
+      var retry=function(){
+        if(v.paused) v.play().catch(function(){});
+      };
+      if(v.readyState>=2) retry();
+      else v.addEventListener('loadeddata', retry, {once:true});
+    });
+  }
 }
 function preloadNext(screen){
   var id=NEXT[screen]; if(!id) return;
@@ -362,11 +371,11 @@ function showScreen(name){
   }
 }
 
-/* ══ 全资源加载：图片/视频/音频全部就绪后才进入游戏 ═══ */
+/* ══ 全资源加载：事件驱动 + 定时轮询双保险，最迟 12 秒必进 ═══ */
 var LOAD_TOTAL=0, LOAD_DONE=0;
 function loadAssets(onProgress, onDone){
   var imgs={bg:U.bg, hr:U.hr, hy:U.hy, ring:U.ring, letter:U.letter, groom:U.groom, bride:U.bride};
-  var vidIds=Object.keys(VIDS);               // 按使用顺序：start→select→rules→map→thanks
+  var vidIds=Object.keys(VIDS);               // start→select→rules→map→thanks
   var auds=[['bgm','aBgm',U.bgm],['btn','aBtn',U.btn],['cat','aCatch',U.cat]];
   var total=Object.keys(imgs).length + vidIds.length + auds.length;
   var done=0;
@@ -376,10 +385,17 @@ function loadAssets(onProgress, onDone){
     if(done>=total && typeof onDone==='function') onDone();
   }
   function once(fn){ var d=false; return function(){ if(d) return; d=true; fn(); }; }
-  // ① 图片：并行加载（小文件，快）
+  var itemDone={};   // 每个资源按 key 标记，防止重复计数
+  function mark(key){
+    if(itemDone[key]) return;
+    itemDone[key]=true; tick();
+  }
+  // ① 图片：并行加载（小文件，快）；complete 即算就绪（成功/失败都不阻塞）
   Object.keys(imgs).forEach(function(k){
     var im=new Image();
-    im.onload=tick; im.onerror=tick; im.src=q(imgs[k]);
+    im.onload=function(){ mark('img:'+k); };
+    im.onerror=function(){ mark('img:'+k); };
+    im.src=q(imgs[k]);
     if(k==='bg') RES.bg=im;
     else if(k==='hr') RES.hr=im;
     else if(k==='hy') RES.hy=im;
@@ -387,36 +403,42 @@ function loadAssets(onProgress, onDone){
     else if(k==='letter') RES.letter=im;
     else if(k==='groom'){ charImg=im; }
   });
-  // ② 音频：并行加载（小文件）
+  // ② 音频：并行加载；能播（readyState>=2）即算就绪
   auds.forEach(function(a){
     var el=$(a[1]);
-    if(!el){ tick(); return; }
-    var ok=once(tick);
+    if(!el){ mark('aud:'+a[0]); return; }
     el.preload='auto';
     var full=q(a[2]);
     if(el.getAttribute('data-src')!==full){ el.src=full; el.setAttribute('data-src',full); }
-    el.addEventListener('canplaythrough', ok);
-    if(el.readyState>=3) ok();
+    var ok=once(function(){ mark('aud:'+a[0]); });
+    el.addEventListener('canplay', ok);
+    if(el.readyState>=2) ok();
     el.load();
-    setTimeout(ok, 15000);
+    setTimeout(ok, 6000);   // 6 秒兜底
   });
-  // ③ 视频：并行加载，首帧就绪（loadeddata）即可算就绪；每视频 8 秒兜底
-  //    （canplaythrough 需缓冲到可播完，弱网下可能永不触发导致加载页干等，故用首帧判定+超时）
-  var vq=[];
+  // ③ 视频：并行加载；首帧就绪（loadeddata）即算就绪
   vidIds.forEach(function(id){
     var v=$(id);
-    if(!v){ tick(); return; }
+    if(!v){ mark('vid:'+id); return; }
     v.preload='auto';
     var full=q(VIDS[id]);
     if(v.getAttribute('data-src')!==full){ v.src=full; v.setAttribute('data-src',full); }
-    var ok=once(tick);
+    var ok=once(function(){ mark('vid:'+id); });
     v.addEventListener('loadeddata', ok);
+    v.addEventListener('error', ok);
     if(v.readyState>=2) ok();
     v.load();
-    setTimeout(ok, 8000);   // 8 秒兜底：即便慢网也计入完成，切屏时自动续缓冲
+    setTimeout(ok, 6000);   // 6 秒兜底
   });
-  // 整体兜底：25 秒后即使个别资源未就绪也强制进入（避免永远卡在加载页）
-  setTimeout(function(){ while(done<total) tick(); }, 25000);
+  // ④ 轮询兜底：250ms 检查一次就绪状态（事件没触发也能发现），整体 12 秒强制进入
+  var started=Date.now();
+  (function poll(){
+    if(done>=total || Date.now()-started >= 12000){
+      while(done<total) tick();   // 到点强制收尾（剩余资源进入游戏后自动续缓冲）
+      return;
+    }
+    setTimeout(poll, 250);
+  })();
 }
 function updateLoadPct(done, total){
   var pct=total ? Math.min(100, Math.round(done/total*100)) : 0;
@@ -485,15 +507,15 @@ function startGame(){
   G.score=0; G.hearts=[];
   G.charX=LOGIC_W/2; G.charDir=1; G.moving=false;
   G.bob=0; G.frame=0; G.ftimer=0; G.spawnT=0.3;
-  G.lastT=0; G.running=true; G.dragNow=false;
-  G.targetX=LOGIC_W/2; G._lastX=LOGIC_W/2;
+  G.lastT=0; G.running=true;
+  G.targetX=LOGIC_W/2;
   playBgm();
   if(G._raf) cancelAnimationFrame(G._raf);
   G._raf=requestAnimationFrame(loop);
 }
 
-/* ══ 输入：按下=线性走向目标点（不瞬移），拖动=完全跟手，松手=停 ══ */
-var MOVE_SPEED = 640;      // 线性走向目标点的速度（逻辑像素/秒），可调：越大走得越快
+/* ══ 输入：按下/拖动都只更新目标点，角色以匀速线性追过去（跟手但不瞬移），松手即停 ══ */
+var MOVE_SPEED = 800;      // 角色线性追目标的速度（逻辑像素/秒），跟手且平滑
 function clampX(x){ return Math.max(DRAW_W/2, Math.min(LOGIC_W-DRAW_W/2, x)); }
 function pointerToCharX(clientX){
   var rect=G.canvas.getBoundingClientRect();
@@ -503,39 +525,13 @@ function pointerToCharX(clientX){
 function bindInput(){
   var gameEl=$('game');
   var lastTouchT=0;
-  var dragMode=false;   // false=线性走向目标；true=完全跟手（累计位移超过阈值才切换）
-  var sumDist=0;        // 按下后手指累计位移（逻辑像素）
-  function onPress(clientX){           // 按下：记录目标点，角色线性走过去（不瞬移）
+  function onPress(clientX){           // 按下：目标=手指位置，角色匀速线性走过去（绝不瞬移）
     G.targetX = pointerToCharX(clientX);
-    G._lastX = G.targetX;
     G.moving = true;
-    dragMode=false;
-    sumDist=0;
   }
-  function onDrag(clientX){
-    var nx = pointerToCharX(clientX);
-    var d = nx - G._lastX;
-    G._lastX = nx;
+  function onDrag(clientX){            // 拖动：目标持续跟随手指，角色始终匀速追（跟手、线性、不闪现）
+    G.targetX = pointerToCharX(clientX);
     G.moving = true;
-    if(dragMode){                      // 跟手：手指到哪角色到哪（零延迟）
-      if(nx >= G.charX) G.charDir = 1; else G.charDir = -1;
-      G.charX = nx;
-      G.targetX = nx;
-      G.dragNow = true;
-      G.dragT = Date.now();
-    }else{
-      sumDist += Math.abs(d);
-      if(sumDist > 25){                // 手指真的在拖（累计超阈值）→ 切换跟手
-        dragMode = true;
-        if(nx >= G.charX) G.charDir = 1; else G.charDir = -1;
-        G.charX = nx;
-        G.targetX = nx;
-        G.dragNow = true;
-        G.dragT = Date.now();
-      }else{                           // 轻微抖动/慢挪：只挪目标点，角色继续线性走，绝不瞬移
-        G.targetX = nx;
-      }
-    }
   }
   gameEl.addEventListener('touchstart',function(e){
     if(!G.running) return; e.preventDefault();
@@ -546,8 +542,8 @@ function bindInput(){
     if(!G.running) return; e.preventDefault();
     onDrag(e.touches[0].clientX);
   },{passive:false});
-  gameEl.addEventListener('touchend',function(){ if(G.running){ G.moving=false; G.dragNow=false; } });
-  gameEl.addEventListener('touchcancel',function(){ if(G.running){ G.moving=false; G.dragNow=false; } });
+  gameEl.addEventListener('touchend',function(){ if(G.running) G.moving=false; });
+  gameEl.addEventListener('touchcancel',function(){ if(G.running) G.moving=false; });
   gameEl.addEventListener('mousedown',function(e){
     if(!G.running) return;
     if(Date.now()-lastTouchT < 600) return;  // 触摸后的合成鼠标事件忽略，避免重复触发
@@ -557,7 +553,7 @@ function bindInput(){
     if(!G.running || !G.moving) return;
     onDrag(e.clientX);
   });
-  window.addEventListener('mouseup',function(){ if(G.running){ G.moving=false; G.dragNow=false; } });
+  window.addEventListener('mouseup',function(){ if(G.running) G.moving=false; });
 }
 
 /* ══ 掉落物 ═════════════════════════════════════════════ */
@@ -589,7 +585,7 @@ function collide(h){
 
 /* ══ 更新 ═══════════════════════════════════════════════ */
 function update(dt){
-  // 移动：按下后线性走向目标点（不瞬移）；拖动时由输入直接跟手
+  // 移动：目标=手指位置，角色匀速线性追（跟手、不瞬移）
   var walking=false;
   if(G.moving){
     var dx=G.targetX - G.charX;
@@ -600,9 +596,8 @@ function update(dt){
       walking=true;
     }
   }
-  // 走路动画：线性走动或拖动时播放；手指停 150ms 站定
-  if(G.dragNow && Date.now()-G.dragT>150) G.dragNow=false;
-  if(walking || G.dragNow){
+  // 走路动画：移动时播；停下后平滑归位站定
+  if(walking){
     G.ftimer += dt;
     while(G.ftimer >= 0.12){ G.ftimer -= 0.12; G.frame=(G.frame+1)%10; }
     G.bob += dt*8;
@@ -860,10 +855,18 @@ function init(){
     if(entered) return; entered=true;
     var l=$('loading'); if(l) l.classList.add('hide');
     setTimeout(function(){ if(l) l.style.display='none'; }, 600);
+    // 预热开始页视频：播放 300ms 再停，确保进入时画面已在动（加载页刚过、解码器就绪）
+    try{
+      var vs=$('vStart');
+      if(vs && vs.readyState>=2){
+        var pr=vs.play(); if(pr&&pr.catch) pr.catch(function(){});
+        setTimeout(function(){ try{ vs.pause(); }catch(e){} }, 300);
+      }
+    }catch(e){}
     showScreen('start');
     try{ setTimeout(function(){ playBgm(); }, 200); }catch(e){}   // 开始页就有音乐
   }
-  // 全部素材就绪（loadAssets 内部含 25 秒弱网兜底）后进入开始页
+  // 全部素材就绪（loadAssets：事件+轮询双保险，最迟 12 秒进入）后进开始页
   loadAssets(function(done,total){
     updateLoadPct(done,total);
     if(done>=total) setTimeout(enter, 350);
