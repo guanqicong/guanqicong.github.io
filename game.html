@@ -26,6 +26,8 @@ button{font-family:inherit;}
 .screen{position:absolute;left:0;top:0;width:100%;height:100%;display:none;overflow:hidden;}
 .screen.active{display:block;}
 .screen video{width:100%;height:100%;object-fit:cover;display:block;background:#000;}
+/* 视频兜底静态画面：微信拦自动播放时显示婚礼画面（不黑屏），视频一播立即淡出 */
+.vid-poster{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;z-index:3;opacity:1;transition:opacity .4s;pointer-events:none;}
 
 /* ══ 透明点击按钮（位置严格按需求文档） ════════════════ */
 .win-btn{position:absolute;border:none;background:transparent;padding:0;margin:0;cursor:pointer;z-index:10;touch-action:manipulation;}
@@ -136,6 +138,7 @@ button{font-family:inherit;}
 <div id="stage">
   <!-- 1. 开始页 -->
   <div id="start" class="screen active">
+    <img id="pStart" class="vid-poster" alt="" />
     <video id="vStart" preload="auto" loop muted playsinline webkit-playsinline
       x5-playsinline x5-video-player-type="h5" x5-video-player-fullscreen="false"
       ></video>
@@ -234,11 +237,12 @@ var DRAW_H = SPR_H * SPR_SCALE;      // 角色绘制高度 ~249
 var FEET_SRC_Y = 230;                // 角色脚底在源帧内的 Y（脚踩地面用）
 var GROUND_Y = 1170;                 // 角色脚底 Y（逻辑坐标）
 var CHAR_CENTER_Y = GROUND_Y - (FEET_SRC_Y - 20) * SPR_SCALE / 2;  // 角色视觉中心 Y（用于碰撞检测）
-var TS = '20260922';                 // 缓存时间戳，改版时更新此值即可
+var TS = '20260923';                 // 缓存时间戳，改版时更新此值即可
 
 /* ══ 素材 URL（全部带时间戳防缓存） ════════════════════ */
 var U = {
   bg:     'assets/img_0_hd.jpg',
+  pstart: 'assets/poster_start.jpg',
   groom:  'assets/groom.webp',
   bride:  'assets/bride.webp',
   hr:     'assets/img_1_hd.webp',
@@ -330,22 +334,23 @@ function playOne(id, src){
   v.preload='auto';                    // 播放时自动缓冲，避免先卡海报
   v.loop = (id!=='vRules');           // 规则视频不循环，播完停最后一帧
   if(v.ended) v.currentTime=0;
-  // 开始页"轻触屏幕"提示：播放成功则淡出，播放被微信拦截则保留引导
+  // 开始页：显示静态兜底画面+轻触提示；视频一播放立即淡出（微信拦自动播放时不黑屏）
   if(id==='vStart'){
     var hint=$('startHint');
-    var hideHint=function(){ if(hint) hint.style.opacity='0'; };
-    var showHint=function(){ if(hint) hint.style.opacity='1'; };
-    showHint();
-    setTimeout(function(){ if(v.paused){ v.currentTime=0.01; tryPlay(); } }, 120);
+    var pimg=$('pStart');
+    var hideCover=function(){ if(pimg) pimg.style.opacity='0'; if(hint) hint.style.opacity='0'; };
+    if(pimg) pimg.style.opacity='1';
+    if(hint) hint.style.opacity='1';
+    setTimeout(function(){ if(v.paused){ try{ v.currentTime=0.01; }catch(e){} tryPlay(); } }, 120);
   }
   var tryPlay=function(){
     if(v.paused){
       var pp=v.play();
-      if(pp && pp.then) pp.then(function(){ if(id==='vStart') hideHint(); }).catch(function(){});
+      if(pp && pp.then) pp.then(function(){ if(id==='vStart') hideCover(); }).catch(function(){});
     }
   };
   var p=v.play();
-  if(p && p.then) p.then(function(){ if(id==='vStart') hideHint(); }).catch(function(){ tryPlay(); });
+  if(p && p.then) p.then(function(){ if(id==='vStart') hideCover(); }).catch(function(){ tryPlay(); });
   // 首帧未就绪时 play() 可能一直挂起（pending）不 reject → 必须主动等 loadeddata 再补播
   if(v.readyState<2) v.addEventListener('loadeddata', tryPlay, {once:true});
 }
@@ -389,7 +394,7 @@ function showScreen(name){
 /* ══ 全资源加载：事件驱动 + 定时轮询双保险，最迟 12 秒必进 ═══ */
 var LOAD_TOTAL=0, LOAD_DONE=0;
 function loadAssets(onProgress, onDone){
-  var imgs={bg:U.bg, hr:U.hr, hy:U.hy, ring:U.ring, letter:U.letter, groom:U.groom, bride:U.bride};
+  var imgs={bg:U.bg, pstart:U.pstart, hr:U.hr, hy:U.hy, ring:U.ring, letter:U.letter, groom:U.groom, bride:U.bride};
   var vidIds=Object.keys(VIDS);               // start→select→rules→map→thanks
   var auds=[['bgm','aBgm',U.bgm],['btn','aBtn',U.btn],['cat','aCatch',U.cat]];
   var total=Object.keys(imgs).length + vidIds.length + auds.length;
@@ -855,7 +860,10 @@ function wechatFix(){
     var v=cur ? cur.querySelector('video') : null;
     if(v && v.getAttribute('data-src') && v.paused){
       var pp=v.play();
-      if(pp && pp.then) pp.then(function(){ var h=$('startHint'); if(h) h.style.opacity='0'; }).catch(function(){});
+      if(pp && pp.then) pp.then(function(){
+        var h=$('startHint'); if(h) h.style.opacity='0';
+        var pi=$('pStart');  if(pi) pi.style.opacity='0';
+      }).catch(function(){});
     }
   }, {passive:true});
 }
@@ -873,6 +881,7 @@ function init(){
     if(entered) return; entered=true;
     var l=$('loading'); if(l) l.classList.add('hide');
     setTimeout(function(){ if(l) l.style.display='none'; }, 600);
+    var pimg=$('pStart'); if(pimg) pimg.src=q(U.pstart);   // 兜底静态画面（带缓存时间戳）
     showScreen('start');   // 进入即播开始页视频（未就绪时会自动补播，见 playOne）
     try{ setTimeout(function(){ playBgm(); }, 200); }catch(e){}   // 开始页就有音乐
   }
