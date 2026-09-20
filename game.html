@@ -236,7 +236,7 @@ var DRAW_H = SPR_H * SPR_SCALE;      // 角色绘制高度 ~249
 var FEET_SRC_Y = 230;                // 角色脚底在源帧内的 Y（脚踩地面用）
 var GROUND_Y = 1170;                 // 角色脚底 Y（逻辑坐标）
 var CHAR_CENTER_Y = GROUND_Y - (FEET_SRC_Y - 20) * SPR_SCALE / 2;  // 角色视觉中心 Y（用于碰撞检测）
-var TS = '20261001';                 // 缓存时间戳，改版时更新此值即可
+var TS = '20261002';                 // 缓存时间戳，改版时更新此值即可
 
 /* ══ 素材 URL（全部带时间戳防缓存） ════════════════════ */
 var U = {
@@ -398,7 +398,7 @@ function loadAssets(onProgress, onDone){
   var imgs={bg:U.bg, pstart:U.pstart, hr:U.hr, hy:U.hy, ring:U.ring, letter:U.letter, groom:U.groom, bride:U.bride};
   var vidIds=Object.keys(VIDS);               // start→select→rules→map→thanks
   var auds=[['bgm','aBgm',U.bgm],['btn','aBtn',U.btn],['cat','aCatch',U.cat]];
-  var total=Object.keys(imgs).length + vidIds.length + auds.length;
+  var total=Object.keys(imgs).length + auds.length + 1;   // 只等：8图+3音频+开始视频；后续4个视频边玩边加载（iOS不白等）
   var done=0;
   function tick(){
     done++;
@@ -449,12 +449,13 @@ function loadAssets(onProgress, onDone){
     v.addEventListener('error', ok);
     if(v.readyState>=2) ok();
     v.load();
-    setTimeout(ok, 6000);   // 6 秒兜底
+    // 只有开始视频阻塞进入（最多6秒）；后续视频后台缓冲，1.5秒即放行不拖累首屏
+    setTimeout(ok, (id==='vStart') ? 6000 : 1500);
   });
   // ④ 轮询兜底：250ms 检查一次就绪状态（事件没触发也能发现），整体 8 秒强制进入
   var started=Date.now();
   (function poll(){
-    if(done>=total || Date.now()-started >= 8000){
+    if(done>=total || Date.now()-started >= 3000){
       while(done<total) tick();   // 到点强制收尾（剩余资源进入游戏后自动续缓冲）
       return;
     }
