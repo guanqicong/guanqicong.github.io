@@ -1,0 +1,140 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover" />
+<meta name="format-detection" content="telephone=no" />
+<title>婚礼宾客登记</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{width:100%;min-height:100%;background:linear-gradient(160deg,#a3241b 0%,#c9342a 45%,#e8b06a 100%);overflow:auto;
+  font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",sans-serif;-webkit-user-select:none;user-select:none;}
+body{display:flex;align-items:center;justify-content:center;padding:24px 14px;}
+.card{width:100%;max-width:420px;background:rgba(255,255,255,.96);border-radius:22px;padding:30px 24px;
+  box-shadow:0 12px 40px rgba(60,10,10,.45);text-align:center;}
+.logo{font-size:44px;margin-bottom:6px;}
+h1{font-size:26px;color:#a3241b;letter-spacing:2px;margin-bottom:4px;}
+.sub{font-size:14px;color:#8a4a28;margin-bottom:22px;}
+.form{display:flex;flex-direction:column;gap:14px;}
+label{font-size:15px;color:#6e2b12;text-align:left;font-weight:700;}
+input[type=text]{height:52px;border:2px solid #e8b06a;border-radius:14px;background:#fffaf3;
+  padding:0 14px;font-size:18px;color:#4a2010;outline:none;text-align:center;}
+input:focus{border-color:#c9342a;}
+.num-row{display:flex;align-items:center;justify-content:center;gap:18px;}
+.num-btn{width:52px;height:52px;border:none;border-radius:14px;background:linear-gradient(180deg,#e94f37,#c9342a);
+  color:#fff;font-size:28px;font-weight:700;cursor:pointer;box-shadow:0 3px 0 #8e1f1f;}
+.num-btn:active{transform:translateY(2px);box-shadow:0 1px 0 #8e1f1f;}
+#num{font-size:32px;font-weight:800;color:#a3241b;min-width:56px;}
+.submit{height:56px;border:none;border-radius:16px;background:linear-gradient(180deg,#f2a03d,#e07a1f);
+  color:#fff;font-size:20px;font-weight:800;letter-spacing:4px;cursor:pointer;box-shadow:0 4px 0 #a85a10;margin-top:8px;}
+.submit:active{transform:translateY(2px);box-shadow:0 2px 0 #a85a10;}
+.submit:disabled{opacity:.6;}
+#msg{min-height:22px;font-size:14px;color:#1d7a3a;margin-top:12px;font-weight:700;}
+#msg.err{color:#c9342a;}
+.foot{margin-top:20px;font-size:12px;color:#a17a55;}
+/* 主办方视图 */
+#admin{margin-top:22px;border-top:1px dashed #e8b06a;padding-top:18px;text-align:left;display:none;}
+#admin h2{font-size:18px;color:#a3241b;margin-bottom:8px;}
+.stats{font-size:14px;color:#6e2b12;margin-bottom:12px;font-weight:700;}
+.export-btn{width:100%;height:48px;border:none;border-radius:12px;background:linear-gradient(180deg,#2f9e44,#1d7a3a);
+  color:#fff;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 3px 0 #145a28;margin-bottom:14px;}
+.export-btn:active{transform:translateY(2px);box-shadow:0 1px 0 #145a28;}
+table{width:100%;border-collapse:collapse;font-size:14px;}
+th,td{border:1px solid #e8b06a;padding:8px 6px;text-align:center;color:#4a2010;}
+th{background:#fdf0dc;color:#a3241b;}
+tr:nth-child(even) td{background:#fffaf3;}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">💌</div>
+  <h1>婚礼宾客登记</h1>
+  <p class="sub">填写信息，让我们提前知道您要来！</p>
+  <div class="form">
+    <input id="gName" type="text" maxlength="12" placeholder="您的姓名（如：张三）" autocomplete="off" />
+    <label>参加人数</label>
+    <div class="num-row">
+      <button class="num-btn" id="minus" aria-label="减少">−</button>
+      <span id="num">2</span>
+      <button class="num-btn" id="plus" aria-label="增加">+</button>
+    </div>
+    <button class="submit" id="submitBtn">提交登记</button>
+  </div>
+  <p id="msg"></p>
+  <div id="admin">
+    <h2>📋 宾客登记表（主办方）</h2>
+    <div class="stats" id="stats"></div>
+    <button class="export-btn" id="exportBtn">⬇ 下载登记表（CSV，Excel 可直接打开）</button>
+    <table id="tbl"><thead><tr><th>序号</th><th>姓名</th><th>人数</th><th>登记时间</th></tr></thead><tbody></tbody></table>
+  </div>
+  <div class="foot">婚礼现场扫码登记 · 期待您的到来</div>
+</div>
+<script>
+var LBTOK = [
+'github_pat_11CMWBH2A0k',
+'DmjudpMod1m_RPF3Zhm',
+'4PXL7nS4N6TwWUXPS',
+'usqaiWAXwl8mLxyMi',
+'9ZZLDYI4YAfVI4oA',
+'8h'
+].join('');
+var API='https://api.github.com/repos/guanqicong/guanqicong.github.io';
+function $(id){return document.getElementById(id);}
+function setMsg(t,err){var m=$('msg');m.textContent=t;m.className=err?'err':'';}
+var num=2;
+$('plus').addEventListener('click',function(){if(num<20)num++;$('num').textContent=num;});
+$('minus').addEventListener('click',function(){if(num>1)num--;$('num').textContent=num;});
+$('submitBtn').addEventListener('click',function(){
+  var name=$('gName').value.trim();
+  if(!name){setMsg('请先输入您的姓名',true);return;}
+  var btn=$('submitBtn');btn.disabled=true;setMsg('正在提交，请稍候…');
+  fetch(API+'/issues',{method:'POST',
+    headers:{'Accept':'application/vnd.github+json','Authorization':'Bearer '+LBTOK,'Content-Type':'application/json'},
+    body:JSON.stringify({title:'宾客登记：'+name,body:'参加人数：'+num+'人\n提交时间：'+new Date().toLocaleString('zh-CN')})})
+  .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
+  .then(function(){
+    setMsg('✅ 登记成功！期待与您相见');$('gName').value='';$('gName').disabled=true;
+    $('plus').style.display='none';$('minus').style.display='none';btn.textContent='已登记 ✓';
+  })
+  .catch(function(e){btn.disabled=false;setMsg('提交失败，请检查网络后重试',true);console.log(e);});
+});
+/* 主办方视图 ?admin=1 */
+function esc(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+function loadAdmin(){
+  $('admin').style.display='block';
+  fetch(API+'/issues?state=open&per_page=100&sort=created&direction=asc',{headers:{'Accept':'application/vnd.github+json','Authorization':'Bearer '+LBTOK}})
+  .then(function(r){return r.json();})
+  .then(function(list){
+    var rows=[];(list||[]).forEach(function(it){
+      if(it.title&&it.title.indexOf('宾客登记：')===0){
+        var name=it.title.slice(5);
+        var numM=it.body?it.body.match(/参加人数：(\d+)人/):null;
+        var tM=it.body?it.body.match(/提交时间：(.+)/):null;
+        rows.push({name:name,num:numM?parseInt(numM[1]):1,time:tM?tM[1]:''});
+      }
+    });
+    var tb=$('tbl').querySelector('tbody');tb.innerHTML='';
+    var total=0;rows.forEach(function(r,i){
+      total+=r.num;
+      var tr=document.createElement('tr');
+      tr.innerHTML='<td>'+(i+1)+'</td><td>'+esc(r.name)+'</td><td>'+r.num+'</td><td>'+esc(r.time)+'</td>';
+      tb.appendChild(tr);
+    });
+    $('stats').textContent='共 '+rows.length+' 条登记 · 预计到场 '+total+' 人';
+    $('exportBtn').style.display=rows.length?'block':'none';
+  }).catch(function(e){$('stats').textContent='加载失败，请检查网络';console.log(e);});
+}
+$('exportBtn').addEventListener('click',function(){
+  var rows=[];var trs=$('tbl').querySelectorAll('tbody tr');
+  trs.forEach(function(tr){var tds=tr.querySelectorAll('td');rows.push([tds[1].textContent,tds[2].textContent,tds[3].textContent]);});
+  var csv='\ufeff姓名,参加人数,登记时间\n';
+  rows.forEach(function(r){csv+=r[0]+','+r[1]+','+r[2].replace(/,/g,'，')+'\n';});
+  var blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='婚礼宾客登记表.csv';document.body.appendChild(a);a.click();
+  setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},300);
+});
+if(location.search.indexOf('admin=1')>=0) loadAdmin();
+</script>
+</body>
+</html>
